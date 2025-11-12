@@ -1,9 +1,10 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Filter, Plus, Search, User } from 'lucide-react-native';
+import { Calendar, Plus, Search, User } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { FlatList, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function RepresentativeRequest() {
   const { user } = useAuth();
@@ -14,7 +15,8 @@ export default function RepresentativeRequest() {
   const [reason, setReason] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Mock data for all requests (no separate pending, just history with statuses)
   const allRequests = [
@@ -84,11 +86,42 @@ export default function RepresentativeRequest() {
     },
   ];
 
+  const handleDateChange = (event: any, selectedDateValue?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    
+    if (selectedDateValue) {
+      setSelectedDate(selectedDateValue);
+    }
+  };
+
+  const clearDate = () => {
+    setSelectedDate(null);
+  };
+
+  const formatDateDisplay = (date: Date | null) => {
+    if (!date) return 'Select Date';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   const filteredRequests = allRequests.filter(req => {
     const matchesSearch = req.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          req.studentId.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterStatus === 'all' || req.status === filterStatus;
-    return matchesSearch && matchesFilter;
+    
+    // Date filtering logic
+    let matchesDate = true;
+    if (selectedDate) {
+      const requestDate = new Date(req.date);
+      const filterDate = new Date(selectedDate);
+      // Compare only year, month, and day
+      matchesDate = requestDate.getFullYear() === filterDate.getFullYear() &&
+                    requestDate.getMonth() === filterDate.getMonth() &&
+                    requestDate.getDate() === filterDate.getDate();
+    }
+    
+    return matchesSearch && matchesFilter && matchesDate;
   });
 
   const handleSubmitRequest = () => {
@@ -309,39 +342,89 @@ export default function RepresentativeRequest() {
             />
           </View>
           <TouchableOpacity 
-            onPress={() => setShowFilters(!showFilters)}
-            className="bg-white rounded-xl px-4 py-3 shadow-sm items-center justify-center"
+            onPress={() => setShowDatePicker(true)}
+            className={`bg-white rounded-xl px-4 py-3 shadow-sm items-center justify-center ${selectedDate ? 'border-2 border-green-500' : ''}`}
           >
-            <Filter size={20} color="#10b981" />
+            <Calendar size={20} color={selectedDate ? "#10b981" : "#64748b"} />
           </TouchableOpacity>
         </View>
 
-        {/* Filter Options */}
-        {showFilters && (
-          <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-            <Text className="text-gray-700 font-bold mb-3">Filter by Status</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {['all', 'pending', 'approved', 'rejected'].map((status) => (
-                <TouchableOpacity
-                  key={status}
-                  onPress={() => setFilterStatus(status as any)}
-                  className={`px-4 py-2 rounded-full ${
-                    filterStatus === status 
-                      ? 'bg-green-600' 
-                      : 'bg-gray-100'
-                  }`}
-                >
-                  <Text className={`font-medium capitalize ${
-                    filterStatus === status 
-                      ? 'text-white' 
-                      : 'text-gray-700'
-                  }`}>
-                    {status}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+        {/* Status Filter - Always Visible */}
+        <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+          <Text className="text-gray-700 font-bold mb-3">Filter by Status</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {['all', 'pending', 'approved', 'rejected'].map((status) => (
+              <TouchableOpacity
+                key={status}
+                onPress={() => setFilterStatus(status as any)}
+                className={`px-4 py-2 rounded-full ${
+                  filterStatus === status 
+                    ? 'bg-green-600' 
+                    : 'bg-gray-100'
+                }`}
+              >
+                <Text className={`font-medium capitalize ${
+                  filterStatus === status 
+                    ? 'text-white' 
+                    : 'text-gray-700'
+                }`}>
+                  {status}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
+        </View>
+
+        {/* Active Date Filter Display */}
+        {selectedDate && (
+          <View className="bg-green-50 rounded-xl px-4 py-3 mb-4 flex-row items-center justify-between border border-green-200">
+            <Text className="text-green-800 text-sm flex-1">
+              Showing requests from <Text className="font-bold">{formatDateDisplay(selectedDate)}</Text>
+            </Text>
+            <TouchableOpacity onPress={clearDate}>
+              <Text className="text-red-600 text-sm font-medium">Clear</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Date Picker Modal */}
+        {showDatePicker && (
+          Platform.OS === 'ios' ? (
+            <Modal
+              transparent={true}
+              animationType="slide"
+              visible={showDatePicker}
+              onRequestClose={() => setShowDatePicker(false)}
+            >
+              <View className="flex-1 justify-end bg-black/50">
+                <View className="bg-white rounded-t-3xl p-4">
+                  <View className="flex-row justify-between items-center mb-3">
+                    <Text className="text-lg font-bold text-gray-900">
+                      Select Date
+                    </Text>
+                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                      <Text className="text-green-600 font-bold">Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker
+                    value={selectedDate || new Date()}
+                    mode="date"
+                    display="spinner"
+                    onChange={handleDateChange}
+                    maximumDate={new Date()}
+                  />
+                </View>
+              </View>
+            </Modal>
+          ) : (
+            <DateTimePicker
+              value={selectedDate || new Date()}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+            />
+          )
         )}
 
         {/* Request History */}
