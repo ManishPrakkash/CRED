@@ -1,3 +1,4 @@
+import BottomNav from '@/components/BottomNav';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BookOpen, Check, Copy, MoreVertical, Plus, QrCode, Search, Users, X } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -405,6 +406,8 @@ const ClassManagementScreen = () => {
           </View>
         </View>
       )}
+      
+      <BottomNav />
     </View>
   );
 };
