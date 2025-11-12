@@ -138,8 +138,8 @@ const ClassManagementScreen = () => {
     >
       <View className="flex-row items-center justify-between">
         <View className="flex-row items-center">
-          <View className="w-12 h-12 rounded-xl bg-blue-100 items-center justify-center">
-            <BookOpen size={24} color="#2563eb" />
+          <View className="w-12 h-12 rounded-xl bg-orange-100 items-center justify-center">
+            <BookOpen size={24} color="#f59e0b" />
           </View>
           <View className="ml-3">
             <Text className="font-bold text-gray-800 text-lg">{item.name}</Text>
@@ -148,8 +148,8 @@ const ClassManagementScreen = () => {
         </View>
         
         <View className="flex-row items-center">
-          <View className="flex-row items-center bg-blue-50 px-3 py-1 rounded-full mr-3">
-            <Users size={16} color="#2563eb" />
+          <View className="flex-row items-center bg-orange-50 px-3 py-1 rounded-full mr-3">
+            <Users size={14} color="#f59e0b" />
             <Text className="text-blue-700 ml-1 font-medium">{item.studentCount}</Text>
           </View>
           <MoreVertical size={20} color="#64748b" />
@@ -215,7 +215,7 @@ const ClassManagementScreen = () => {
     <View className="flex-1 bg-gray-50">
       {/* Header */}
       <LinearGradient 
-        colors={['#2563eb', '#3b82f6']} 
+        colors={['#f59e0b', '#f97316']} 
         className="pb-8"
       >
         <View className="pt-16 pb-4 px-6">
@@ -259,7 +259,7 @@ const ClassManagementScreen = () => {
               </TouchableOpacity>
               
               <TouchableOpacity 
-                className="flex-1 bg-blue-600 py-3 rounded-lg items-center"
+                className="flex-1 bg-orange-600 py-3 rounded-lg items-center"
                 onPress={handleCreateClass}
               >
                 <Text className="text-white font-bold">Create Class</Text>
@@ -271,8 +271,8 @@ const ClassManagementScreen = () => {
             className="flex-row items-center bg-white rounded-xl p-4 mb-6 shadow-sm"
             onPress={() => setShowCreateForm(true)}
           >
-            <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center">
-              <Plus size={20} color="#2563eb" />
+            <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center">
+              <Plus size={20} color="#f59e0b" />
             </View>
             <Text className="ml-3 text-gray-800 font-bold">Create New Class</Text>
           </TouchableOpacity>
@@ -291,7 +291,7 @@ const ClassManagementScreen = () => {
               onChangeText={setJoinCodeInput}
             />
             <TouchableOpacity 
-              className="bg-blue-600 py-3 px-5 rounded-lg"
+              className="bg-orange-600 py-3 px-5 rounded-lg"
               onPress={handleJoinClass}
             >
               <Text className="text-white font-bold">Join</Text>
@@ -397,7 +397,7 @@ const ClassManagementScreen = () => {
             
             <View className="p-5 border-t border-gray-100">
               <TouchableOpacity 
-                className="bg-blue-600 py-3 rounded-lg items-center"
+                className="bg-orange-600 py-3 rounded-lg items-center"
                 onPress={() => copyToClipboard(selectedClass.joinCode)}
               >
                 <Text className="text-white font-bold">Copy Join Code</Text>
