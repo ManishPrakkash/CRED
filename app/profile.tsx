@@ -1,5 +1,6 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Award, Bell, LogOut, Mail, Shield, User } from 'lucide-react-native';
 import React from 'react';
@@ -8,6 +9,7 @@ import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-na
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const isAdvisor = user?.role === 'advisor';
 
   const handleLogout = () => {
     Alert.alert(
@@ -30,10 +32,13 @@ export default function ProfileScreen() {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <View className="bg-blue-600 pt-12 pb-8 px-6">
+      <LinearGradient 
+        colors={isAdvisor ? ['#f59e0b', '#f97316'] : ['#2563eb', '#3b82f6']} 
+        className="pt-12 pb-8 px-6 rounded-b-3xl"
+      >
         <Text className="text-2xl font-bold text-white">Profile</Text>
-        <Text className="text-blue-100 mt-1">Manage your account settings</Text>
-      </View>
+        <Text className="text-white/90 mt-1">Manage your account settings</Text>
+      </LinearGradient>
 
       <ScrollView className="flex-1 px-4 py-6">
         {/* Profile Card */}
@@ -44,16 +49,27 @@ export default function ProfileScreen() {
               className="w-24 h-24 rounded-full mb-4"
             />
           ) : (
-            <View className="w-24 h-24 rounded-full bg-blue-100 items-center justify-center mb-4">
-              <User size={48} color="#2563eb" />
+            <View 
+              className="w-24 h-24 rounded-full items-center justify-center mb-4"
+              style={{ backgroundColor: isAdvisor ? '#fed7aa' : '#dbeafe' }}
+            >
+              <User size={48} color={isAdvisor ? '#f59e0b' : '#2563eb'} />
             </View>
           )}
           <Text className="text-2xl font-bold text-gray-800">{user?.name}</Text>
           <Text className="text-gray-500 mt-1">{user?.email}</Text>
           
-          <View className="flex-row items-center mt-3 px-4 py-2 bg-blue-50 rounded-full">
-            <Shield size={16} color="#2563eb" />
-            <Text className="text-blue-600 font-semibold ml-2 capitalize">{user?.role}</Text>
+          <View 
+            className="flex-row items-center mt-3 px-4 py-2 rounded-full"
+            style={{ backgroundColor: isAdvisor ? '#fed7aa' : '#dbeafe' }}
+          >
+            <Shield size={16} color={isAdvisor ? '#f59e0b' : '#2563eb'} />
+            <Text 
+              className="font-semibold ml-2 capitalize"
+              style={{ color: isAdvisor ? '#ea580c' : '#2563eb' }}
+            >
+              {user?.role}
+            </Text>
           </View>
         </View>
 
