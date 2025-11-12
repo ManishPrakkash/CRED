@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { usePathname, useRouter } from 'expo-router';
+import { Href, usePathname, useRouter } from 'expo-router';
 import { ClipboardList, Home, User as UserIcon, Users } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
@@ -18,15 +18,15 @@ export default function BottomNav() {
   const tabs: Array<{
     key: TabKey;
     label: string;
-    href: string;
+    href: Href;
     icon: React.ComponentType<any>;
     visible: boolean;
     active: boolean;
   }> = [
-    { key: 'home', label: 'Dashboard', href: '/', icon: Home, visible: true, active: pathname === '/' },
-    { key: 'requests', label: 'Requests', href: '/request', icon: ClipboardList, visible: !!canSeeRequests, active: pathname?.startsWith('/request') ?? false },
-    { key: 'classes', label: 'Classes', href: '/classManagement', icon: Users, visible: !!canSeeClasses, active: pathname?.startsWith('/classManagement') ?? false },
-    { key: 'profile', label: 'Profile', href: '/profile', icon: UserIcon, visible: true, active: pathname?.startsWith('/profile') ?? false },
+    { key: 'home', label: 'Dashboard', href: '/' as Href, icon: Home, visible: true, active: pathname === '/' },
+    { key: 'requests', label: 'Requests', href: '/request' as Href, icon: ClipboardList, visible: !!canSeeRequests, active: pathname?.startsWith('/request') ?? false },
+    { key: 'classes', label: 'Classes', href: '/classManagement' as Href, icon: Users, visible: !!canSeeClasses, active: pathname?.startsWith('/classManagement') ?? false },
+    { key: 'profile', label: 'Profile', href: '/profile' as Href, icon: UserIcon, visible: true, active: pathname?.startsWith('/profile') ?? false },
   ];
 
   return (
