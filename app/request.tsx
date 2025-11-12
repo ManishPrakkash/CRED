@@ -2,7 +2,7 @@ import AdvisorRequest from '@/components/requests/AdvisorRequest';
 import RepresentativeRequest from '@/components/requests/RepresentativeRequest';
 import { useAuth } from '@/contexts/AuthContext';
 import React from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 export default function RequestManagementScreen() {
   const { user, isLoading } = useAuth();
