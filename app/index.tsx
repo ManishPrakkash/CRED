@@ -1,4 +1,7 @@
-﻿import { LinearGradient } from 'expo-linear-gradient';
+﻿import BottomNav from '@/components/BottomNav';
+import { useAuth } from '@/contexts/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import {
   AlertTriangle,
   Award,
@@ -12,9 +15,6 @@ import {
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import BottomNav from '@/components/BottomNav';
-import { useAuth } from '@/contexts/AuthContext';
 
 const HomeScreen = () => {
   const router = useRouter();

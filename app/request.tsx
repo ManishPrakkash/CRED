@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, FlatList } from 'react-native';
 import BottomNav from '@/components/BottomNav';
-import { Check, X, Clock, User, Calendar, FileText, ChevronRight } from 'lucide-react-native';
+import { Calendar, Check, User, X } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { FlatList, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const RequestManagementScreen = () => {
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
