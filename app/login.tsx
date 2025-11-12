@@ -1,7 +1,7 @@
 ﻿import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/lib/types';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Award, Eye, EyeOff, Lock, Mail, UserCheck, Users } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -24,7 +24,7 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
       await login(email, password, role);
-      router.replace('/' as Href);
+      // Navigation is handled by the root layout's Redirect guard.
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Invalid credentials');
     } finally {
