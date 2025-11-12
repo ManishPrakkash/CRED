@@ -1,6 +1,6 @@
-import React from 'react';
-import { Stack, usePathname, useRouter } from 'expo-router';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { Stack, usePathname, useRouter } from 'expo-router';
+import React from 'react';
 
 function NavigationGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
