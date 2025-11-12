@@ -24,7 +24,7 @@ export default function LoginScreen() {
     try {
       setIsLoading(true);
       await login(email, password, role);
-      router.replace('/dashboard' as Href);
+      router.replace('/' as Href);
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Invalid credentials');
     } finally {

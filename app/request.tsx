@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, FlatList } from 'react-native';
+import BottomNav from '@/components/BottomNav';
 import { Check, X, Clock, User, Calendar, FileText, ChevronRight } from 'lucide-react-native';
 
 const RequestManagementScreen = () => {
@@ -57,6 +58,8 @@ const RequestManagementScreen = () => {
       avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzJ8fHVzZXJ8ZW58MHx8MHx8fDA%3D',
     },
   ];
+
+
 
   const handleSubmitRequest = () => {
     // In a real app, this would submit the request
@@ -234,6 +237,7 @@ const RequestManagementScreen = () => {
           )}
         </View>
       </ScrollView>
+      <BottomNav />
     </View>
   );
 };

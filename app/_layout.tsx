@@ -1,20 +1,17 @@
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { Stack, usePathname, useRouter } from 'expo-router';
+import { Redirect, Stack, usePathname } from 'expo-router';
 import React from 'react';
 
 function NavigationGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
 
-  React.useEffect(() => {
-    if (!user && pathname !== '/login') {
-      router.replace('/login');
-    }
-    if (user && pathname === '/login') {
-      router.replace('/');
-    }
-  }, [user, pathname]);
+  if (!user && pathname !== '/login') {
+    return <Redirect href="/login" />;
+  }
+  if (user && pathname === '/login') {
+    return <Redirect href="/" />;
+  }
 
   return <>{children}</>;
 }

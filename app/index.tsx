@@ -12,8 +12,13 @@ import {
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import BottomNav from '@/components/BottomNav';
+import { useAuth } from '@/contexts/AuthContext';
 
 const HomeScreen = () => {
+  const router = useRouter();
+  const { user } = useAuth();
   const [credPoints, setCredPoints] = useState(1020);
   const [recentActivity, setRecentActivity] = useState([
     { id: 1, action: 'Assignment submitted on time', points: '+20', time: '2 hours ago', type: 'positive' },
@@ -67,6 +72,20 @@ const HomeScreen = () => {
       </LinearGradient>
 
       <ScrollView className="flex-1 px-4 py-6" showsVerticalScrollIndicator={false}>
+        {/* Quick Actions based on role */}
+        <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
+          <Text className="text-gray-900 font-bold text-lg mb-3">Quick Actions</Text>
+          <View className="flex-row gap-3">
+            <TouchableOpacity onPress={() => router.push('/request')} className={`flex-1 rounded-xl p-4 ${user?.role === 'representative' || user?.role === 'advisor' ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50 border border-gray-200'}`} disabled={!(user?.role === 'representative' || user?.role === 'advisor')}>
+              <Text className={`${user?.role === 'representative' || user?.role === 'advisor' ? 'text-blue-700' : 'text-gray-400'} font-semibold`}>Requests</Text>
+              <Text className="text-xs text-gray-500 mt-1">Submit or review point changes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/classManagement')} className={`flex-1 rounded-xl p-4 ${user?.role === 'advisor' ? 'bg-emerald-50 border border-emerald-200' : 'bg-gray-50 border border-gray-200'}`} disabled={!(user?.role === 'advisor')}>
+              <Text className={`${user?.role === 'advisor' ? 'text-emerald-700' : 'text-gray-400'} font-semibold`}>Classes</Text>
+              <Text className="text-xs text-gray-500 mt-1">Create and manage classes</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
         {/* Class Stats */}
         <View className="flex-row flex-wrap gap-4 mb-6">
           {classStats.map((stat, index) => (
@@ -168,6 +187,7 @@ const HomeScreen = () => {
           </View>
         </View>
       </ScrollView>
+      <BottomNav />
     </View>
   );
 };
