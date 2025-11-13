@@ -9,9 +9,7 @@ import {
     CheckCircle,
     ClipboardList,
     TrendingUp,
-    Users,
-    Trophy,
-    ChevronRight
+    Users
 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -39,17 +37,11 @@ export default function AdvisorDashboard() {
     { id: 3, name: 'Chemistry Lab', students: 32, pending: 7, avgPoints: 950 },
   ];
 
-  const topPerformers = [
-    { rank: 1, name: 'Emily Watson', points: 2850, class: 'Math 101' },
-    { rank: 2, name: 'Michael Chen', points: 2650, class: 'Physics' },
-    { rank: 3, name: 'Sarah Johnson', points: 2450, class: 'Chemistry' },
-  ];
-
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
       <LinearGradient 
-        colors={['#f59e0b', '#f97316']} 
+        colors={['#10b981', '#059669']} 
         className="px-6 pt-12 pb-6 rounded-b-3xl"
       >
         <View className="flex-row justify-between items-center">
@@ -179,45 +171,6 @@ export default function AdvisorDashboard() {
               </View>
             </TouchableOpacity>
           ))}
-        </View>
-        {/* Leaderboard Overview */}
-        <View className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-4 mb-6 shadow-sm border-2 border-yellow-200">
-          <View className="flex-row justify-between items-center mb-4">
-            <View className="flex-row items-center">
-              <Trophy size={24} color="#f59e0b" />
-              <Text className="text-gray-900 font-bold text-lg ml-2">Overall Leaderboard</Text>
-            </View>
-            <TouchableOpacity 
-              onPress={() => router.push('/leaderboard')}
-              className="flex-row items-center bg-white px-3 py-1.5 rounded-full"
-            >
-              <Text className="text-blue-600 font-medium text-sm">View All</Text>
-              <ChevronRight size={16} color="#2563eb" />
-            </TouchableOpacity>
-          </View>
-          
-          <Text className="text-gray-600 text-sm mb-3">🏆 Top 3 Students Across All Classes</Text>
-          
-          {topPerformers.map((student) => {
-            const medalColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
-            return (
-              <View 
-                key={student.rank} 
-                className="flex-row items-center py-2.5 px-3 bg-white rounded-lg mb-2 shadow-sm"
-              >
-                <View className="w-8 h-8 rounded-full items-center justify-center mr-3">
-                  <Trophy size={20} color={medalColors[student.rank - 1]} />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-gray-900 font-bold">{student.name}</Text>
-                  <Text className="text-gray-500 text-xs">{student.class}</Text>
-                </View>
-                <View className="bg-green-100 px-2.5 py-1 rounded-full">
-                  <Text className="text-green-700 font-bold text-sm">{student.points}</Text>
-                </View>
-              </View>
-            );
-          })}
         </View>
       </ScrollView>
 
