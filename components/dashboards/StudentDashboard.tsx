@@ -31,12 +31,7 @@ export default function StudentDashboard() {
     { id: 2, action: 'Helped peers in group project', points: '+15', time: '1 day ago', type: 'positive' },
     { id: 3, action: 'Late to class', points: '-10', time: '2 days ago', type: 'negative' },
     { id: 4, action: 'Perfect attendance this week', points: '+25', time: '3 days ago', type: 'positive' },
-  ];
-
-  const upcomingTasks = [
-    { id: 1, title: 'Math Assignment', due: 'Tomorrow', priority: 'high', points: 20 },
-    { id: 2, title: 'Science Project', due: 'In 3 days', priority: 'medium', points: 30 },
-    { id: 3, title: 'History Essay', due: 'Next week', priority: 'low', points: 15 },
+    { id: 5, action: 'Excellent quiz performance', points: '+30', time: '4 days ago', type: 'positive' },
   ];
 
   const achievements = [
@@ -114,7 +109,7 @@ export default function StudentDashboard() {
         <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-gray-900 font-bold text-lg">Recent Activity</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/progress')}>
               <Text className="text-blue-600 text-sm font-medium">View All</Text>
             </TouchableOpacity>
           </View>
@@ -140,68 +135,6 @@ export default function StudentDashboard() {
               </Text>
             </View>
           ))}
-        </View>
-
-        {/* Upcoming Tasks */}
-        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-gray-900 font-bold text-lg">Upcoming Tasks</Text>
-            <TouchableOpacity className="p-2 bg-blue-50 rounded-full">
-              <Plus size={16} color="#2563eb" />
-            </TouchableOpacity>
-          </View>
-          
-          {upcomingTasks.map((task) => (
-            <View 
-              key={task.id} 
-              className="flex-row items-center py-3 border-b border-gray-100 last:border-0"
-            >
-              <View className={`p-2 rounded-lg mr-3 ${
-                task.priority === 'high' ? 'bg-red-100' : 
-                task.priority === 'medium' ? 'bg-orange-100' : 
-                'bg-blue-100'
-              }`}>
-                {task.priority === 'high' ? (
-                  <AlertTriangle size={16} color="#ef4444" />
-                ) : (
-                  <Clock size={16} color={task.priority === 'medium' ? '#f59e0b' : '#2563eb'} />
-                )}
-              </View>
-              <View className="flex-1">
-                <Text className="text-gray-900 font-medium">{task.title}</Text>
-                <View className="flex-row items-center mt-1">
-                  <Calendar size={12} color="#64748b" />
-                  <Text className="text-gray-500 text-xs ml-1">{task.due}</Text>
-                </View>
-              </View>
-              <View className="items-end">
-                <Text className="text-blue-600 font-bold">+{task.points}</Text>
-                <Text className="text-gray-400 text-xs">points</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* Weekly Progress */}
-        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-          <Text className="text-gray-900 font-bold text-lg mb-4">Weekly Progress</Text>
-          <View className="flex-row justify-between items-end h-32">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day, index) => {
-              const heights = [60, 80, 45, 90, 75];
-              return (
-                <View key={day} className="items-center flex-1">
-                  <View 
-                    className="bg-blue-500 rounded-t-lg w-8"
-                    style={{ height: heights[index] }}
-                  />
-                  <Text className="text-gray-500 text-xs mt-2">{day}</Text>
-                </View>
-              );
-            })}
-          </View>
-          <Text className="text-gray-500 text-sm text-center mt-4">
-            Great week! You earned <Text className="text-green-600 font-bold">+45 points</Text>
-          </Text>
         </View>
       </ScrollView>
 
