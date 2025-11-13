@@ -438,13 +438,13 @@ export default function RepresentativeRequest() {
                   onPress={() => setRequestType('add')}
                   className={`flex-1 py-3 rounded-lg items-center ${requestType === 'add' ? 'bg-green-100 border-2 border-green-400' : 'bg-gray-100'}`}
                 >
-                  <Text className={`font-bold ${requestType === 'add' ? 'text-green-700' : 'text-gray-600'}`}>Add Points</Text>
+                  <Text className={`font-bold ${requestType === 'add' ? 'text-green-700' : 'text-gray-600'}`}>Credit</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   onPress={() => setRequestType('subtract')}
                   className={`flex-1 py-3 rounded-lg items-center ${requestType === 'subtract' ? 'bg-red-100 border-2 border-red-400' : 'bg-gray-100'}`}
                 >
-                  <Text className={`font-bold ${requestType === 'subtract' ? 'text-red-700' : 'text-gray-600'}`}>Subtract Points</Text>
+                  <Text className={`font-bold ${requestType === 'subtract' ? 'text-red-700' : 'text-gray-600'}`}>Debit</Text>
                 </TouchableOpacity>
               </View>
             </View>
