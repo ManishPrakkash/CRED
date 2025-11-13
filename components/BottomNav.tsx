@@ -1,10 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Href, usePathname, useRouter } from 'expo-router';
-import { ClipboardList, Home, User as UserIcon, Users, Trophy } from 'lucide-react-native';
+import { ClipboardList, Home, User as UserIcon, Users, Trophy, TrendingUp } from 'lucide-react-native';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 
-type TabKey = 'home' | 'requests' | 'classes' | 'profile' | 'leaderboard';
+type TabKey = 'home' | 'requests' | 'classes' | 'profile' | 'leaderboard' | 'progress';
 
 export default function BottomNav() {
   const router = useRouter();
@@ -14,6 +14,7 @@ export default function BottomNav() {
   // role-aware visibility
   const canSeeRequests = user?.role === 'representative' || user?.role === 'advisor';
   const canSeeClasses = user?.role === 'advisor';
+  const canSeeProgress = user?.role === 'student' || user?.role === 'representative';
 
   const tabs: Array<{
     key: TabKey;
@@ -24,6 +25,7 @@ export default function BottomNav() {
     active: boolean;
   }> = [
     { key: 'home', label: 'Dashboard', href: '/' as Href, icon: Home, visible: true, active: pathname === '/' },
+    { key: 'progress', label: 'Progress', href: '/progress' as Href, icon: TrendingUp, visible: !!canSeeProgress, active: pathname?.startsWith('/progress') ?? false },
     { key: 'leaderboard', label: 'Leaderboard', href: '/leaderboard' as Href, icon: Trophy, visible: true, active: pathname?.startsWith('/leaderboard') ?? false },
     { key: 'requests', label: 'Requests', href: '/request' as Href, icon: ClipboardList, visible: !!canSeeRequests, active: pathname?.startsWith('/request') ?? false },
     { key: 'classes', label: 'Classes', href: '/classManagement' as Href, icon: Users, visible: !!canSeeClasses, active: pathname?.startsWith('/classManagement') ?? false },
