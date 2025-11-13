@@ -3,7 +3,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
-    AlertCircle,
     Award,
     Bell,
     CheckCircle,
@@ -11,7 +10,8 @@ import {
     Clock,
     Plus,
     Send,
-    TrendingUp
+    TrendingUp,
+    AlertTriangle
 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -131,7 +131,7 @@ export default function RepresentativeDashboard() {
             </TouchableOpacity>
           </View>
           
-          {recentRequests.map((request) => (
+          {recentRequests.slice(0, 5).map((request) => (
             <View 
               key={request.id} 
               className="py-3 border-b border-gray-100 last:border-0"
@@ -157,22 +157,50 @@ export default function RepresentativeDashboard() {
           ))}
         </View>
 
-        {/* Tips & Guidelines */}
-        <View className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-4 mb-6 border border-blue-100">
-          <View className="flex-row items-start">
-            <View className="p-2 bg-blue-100 rounded-full">
-              <AlertCircle size={20} color="#2563eb" />
-            </View>
-            <View className="flex-1 ml-3">
-              <Text className="text-gray-900 font-bold mb-2">Representative Guidelines</Text>
-              <Text className="text-gray-600 text-sm leading-5">
-                • Be specific and detailed in request reasons{'\n'}
-                • Submit requests promptly after incidents{'\n'}
-                • Follow class point policies{'\n'}
-                • Review advisor feedback regularly
-              </Text>
-            </View>
+        {/* Recent Activity */}
+        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-gray-900 font-bold text-lg">Recent Activity</Text>
+            <TouchableOpacity onPress={() => router.push('/progress')}>
+              <Text className="text-blue-600 text-sm font-medium">View All</Text>
+            </TouchableOpacity>
           </View>
+          
+          {[
+            { id: 1, action: 'Assignment submitted on time', points: '+20', time: '2 hours ago', type: 'positive' },
+            { id: 2, action: 'Helped peers in group project', points: '+15', time: '1 day ago', type: 'positive' },
+            { id: 3, action: 'Late to class', points: '-10', time: '2 days ago', type: 'negative' },
+            { id: 4, action: 'Perfect attendance this week', points: '+25', time: '3 days ago', type: 'positive' },
+            { id: 5, action: 'Excellent quiz performance', points: '+30', time: '4 days ago', type: 'positive' },
+          ].map((activity) => (
+            <View
+              key={activity.id}
+              className="flex-row items-start py-3 border-b border-gray-100 last:border-0"
+            >
+              <View className={`p-2 rounded-lg mr-3 ${
+                activity.type === 'positive' ? 'bg-green-100' : 'bg-red-100'
+              }`}>
+                {activity.type === 'positive' ? (
+                  <CheckCircle size={16} color="#10b981" />
+                ) : (
+                  <AlertTriangle size={16} color="#ef4444" />
+                )}
+              </View>
+              <View className="flex-1">
+                <Text className="text-gray-900 font-medium">{activity.action}</Text>
+                <Text className="text-gray-500 text-xs mt-1">{activity.time}</Text>
+              </View>
+              <View className={`px-3 py-1 rounded-full ${
+                activity.type === 'positive' ? 'bg-green-100' : 'bg-red-100'
+              }`}>
+                <Text className={`font-bold text-sm ${
+                  activity.type === 'positive' ? 'text-green-700' : 'text-red-700'
+                }`}>
+                  {activity.points}
+                </Text>
+              </View>
+            </View>
+          ))}
         </View>
 
         {/* Performance Summary */}
