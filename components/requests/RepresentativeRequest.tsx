@@ -91,9 +91,24 @@ export default function RepresentativeRequest() {
       setShowDatePicker(false);
     }
     
-    if (selectedDateValue) {
+    if (event.type === 'dismissed' || event.type === 'set') {
+      if (Platform.OS === 'ios') {
+        // For iOS, only close on Done button
+        return;
+      }
+    }
+    
+    if (selectedDateValue && event.type !== 'dismissed') {
       setSelectedDate(selectedDateValue);
     }
+  };
+
+  const handleIOSDone = () => {
+    setShowDatePicker(false);
+  };
+
+  const handleIOSCancel = () => {
+    setShowDatePicker(false);
   };
 
   const clearDate = () => {
@@ -399,10 +414,13 @@ export default function RepresentativeRequest() {
               <View className="flex-1 justify-end bg-black/50">
                 <View className="bg-white rounded-t-3xl p-4">
                   <View className="flex-row justify-between items-center mb-3">
+                    <TouchableOpacity onPress={handleIOSCancel}>
+                      <Text className="text-gray-600 font-medium">Cancel</Text>
+                    </TouchableOpacity>
                     <Text className="text-lg font-bold text-gray-900">
                       Select Date
                     </Text>
-                    <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <TouchableOpacity onPress={handleIOSDone}>
                       <Text className="text-green-600 font-bold">Done</Text>
                     </TouchableOpacity>
                   </View>
