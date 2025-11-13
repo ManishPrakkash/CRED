@@ -1,4 +1,4 @@
-﻿import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/lib/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -157,13 +157,6 @@ export default function LoginScreen() {
               {isLoading ? 'Logging in...' : 'Login'}
             </Text>
           </TouchableOpacity>
-          
-          <View className="flex-row items-center justify-center mt-6">
-            <Text className="text-gray-600">Don't have an account? </Text>
-            <TouchableOpacity>
-              <Text className="text-blue-600 font-semibold">Sign Up</Text>
-            </TouchableOpacity>
-          </View>
         </View>
         
         <View className="mt-6 mb-12">
