@@ -10,6 +10,7 @@ const mockUsers: Record<UserRole, User> = {
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
     joinedClasses: [],
     currentClassId: null,
+    notifications: [],
   },
   advisor: {
     id: '3',
