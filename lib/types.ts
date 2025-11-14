@@ -1,6 +1,20 @@
 // User roles
 export type UserRole = 'staff' | 'advisor';
 
+// Notification interface
+export interface Notification {
+  id: string;
+  type: 'request_submitted' | 'request_approved' | 'request_rejected' | 'request_correction';
+  title: string;
+  message: string;
+  requestId: string;
+  fromUserId: string;
+  fromUserName: string;
+  read: boolean;
+  createdAt: string;
+  requestData?: any; // Store the full request data for viewing
+}
+
 // User interface
 export interface User {
   id: string;
@@ -10,6 +24,7 @@ export interface User {
   avatar?: string;
   currentClassId?: string | null;
   joinedClasses?: JoinedClass[];
+  notifications?: Notification[];
 }
 
 // Joined Class interface for staff
