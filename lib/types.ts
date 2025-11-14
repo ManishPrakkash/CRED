@@ -1,5 +1,5 @@
 // User roles
-export type UserRole = 'student' | 'representative' | 'advisor';
+export type UserRole = 'staff' | 'advisor';
 
 // User interface
 export interface User {
@@ -8,6 +8,16 @@ export interface User {
   name: string;
   role: UserRole;
   avatar?: string;
+  currentClassId?: string | null;
+  joinedClasses?: JoinedClass[];
+}
+
+// Joined Class interface for staff
+export interface JoinedClass {
+  id: string;
+  name: string;
+  joinCode: string;
+  joinedAt: string;
 }
 
 // Class interface
@@ -41,11 +51,14 @@ export interface Attachment {
 // Request interface
 export interface Request {
   id: string;
-  studentName: string;
-  studentId: string;
+  studentName?: string;
+  studentId?: string;
+  staffName?: string;
+  staffId?: string;
   points: number;
   type: 'add' | 'subtract';
   reason: string;
+  workDescription?: string;
   date: string;
   time?: string;
   status?: 'approved' | 'rejected' | 'pending';
@@ -54,6 +67,7 @@ export interface Request {
   reviewedBy?: string | null;
   reviewDate?: string;
   rejectionReason?: string;
+  classId?: string;
 }
 
 // Activity interface
