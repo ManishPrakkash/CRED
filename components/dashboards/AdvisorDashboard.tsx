@@ -4,11 +4,11 @@ import { useClasses } from '@/contexts/ClassContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
-    Bell,
-    BookOpen,
-    CheckCircle,
-    ClipboardList,
-    Users
+  Bell,
+  BookOpen,
+  CheckCircle,
+  ClipboardList,
+  Users
 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -110,14 +110,9 @@ export default function AdvisorDashboard() {
                 onPress={() => router.push('/classManagement')}
                 className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-100"
               >
-                <View className="flex-row justify-between items-start mb-3">
-                  <View className="flex-1">
-                    <Text className="text-gray-900 font-bold">{cls.name}</Text>
-                    <Text className="text-gray-500 text-sm mt-1">{cls.studentCount} student{cls.studentCount !== 1 ? 's' : ''} enrolled</Text>
-                  </View>
-                </View>
-                <View className="flex-row items-center">
-                  <Text className="text-gray-600 text-sm">Code: {cls.code}</Text>
+                <View className="flex-1">
+                  <Text className="text-gray-900 font-bold">{cls.name}</Text>
+                  <Text className="text-gray-500 text-sm mt-1">{cls.studentCount} student{cls.studentCount !== 1 ? 's' : ''} enrolled</Text>
                 </View>
               </TouchableOpacity>
             ))}
