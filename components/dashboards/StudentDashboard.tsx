@@ -17,7 +17,7 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function StudentDashboard() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, unreadCount } = useAuth();
   
   const currentClass = user?.joinedClasses?.find(c => c.id === user.currentClassId);
 
@@ -43,53 +43,184 @@ export default function StudentDashboard() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      {/* Header */}
+      {/* Header - Option 4: Stacked Cards (Active) */}
       <LinearGradient 
         colors={['#f59e0b', '#f97316']} 
-        className="px-6 pt-12 pb-6 rounded-b-3xl"
+        className="px-6 pt-10 pb-4 rounded-b-2xl"
       >
-        <View className="flex-row justify-between items-center">
-          <View>
-            <Text className="text-white text-sm opacity-90">Welcome back,</Text>
-            <Text className="text-white text-2xl font-bold mt-1">{user?.name}</Text>
-          </View>
-          <TouchableOpacity className="p-2 bg-white/20 rounded-full">
-            <Bell size={24} color="white" />
+        <View className="flex-row justify-between items-center mb-3">
+          <Text className="text-white text-xl font-bold">{user?.name}</Text>
+          <TouchableOpacity 
+            className="p-2 bg-white/20 rounded-lg relative"
+            onPress={() => router.push('/notifications')}
+          >
+            <Bell size={18} color="white" />
+            {unreadCount > 0 && (
+              <View className="absolute -top-1 -right-1 bg-red-500 rounded-full min-w-[18px] h-[18px] items-center justify-center px-1">
+                <Text className="text-white text-xs font-bold">{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
         
-        {/* Current Class Card */}
-        <TouchableOpacity 
-          className="bg-white/20 rounded-2xl p-4 mt-4"
-          onPress={() => router.push('/joinClass')}
-        >
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1">
-              <Text className="text-white/80 text-sm">Current Class</Text>
-              <Text className="text-white text-xl font-bold mt-1">
-                {currentClass?.name || 'No class selected'}
-              </Text>
-              {currentClass && (
-                <Text className="text-white/90 text-sm mt-1">Code: {currentClass.joinCode}</Text>
-              )}
-            </View>
-            <BookOpen size={40} color="rgba(255,255,255,0.9)" />
-          </View>
-          <Text className="text-white/70 text-xs mt-3">Tap to switch class</Text>
-        </TouchableOpacity>
-        
-        {/* CredPoints Card */}
-        <View className="bg-white/20 rounded-2xl p-4 mt-3">
-          <Text className="text-white/80 text-sm">Your CredPoints</Text>
-          <View className="flex-row items-end justify-between mt-2">
-            <View>
-              <Text className="text-white text-4xl font-bold">850</Text>
-              <Text className="text-white/90 text-sm mt-1">+120 this month</Text>
-            </View>
-            <Award size={48} color="rgba(255,255,255,0.9)" />
+        <View className="flex-row gap-2">
+          <TouchableOpacity 
+            className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30"
+            onPress={() => router.push('/joinClass')}
+            activeOpacity={0.8}
+          >
+            <BookOpen size={16} color="rgba(255,255,255,0.9)" />
+            <Text className="text-white/90 text-xs font-medium mt-1">CLASS</Text>
+            <Text className="text-white text-base font-bold mt-0.5" numberOfLines={1}>
+              {currentClass?.name || 'None'}
+            </Text>
+          </TouchableOpacity>
+          
+          <View className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30">
+            <Award size={16} color="rgba(255,255,255,0.9)" />
+            <Text className="text-white/90 text-xs font-medium mt-1">POINTS</Text>
+            <Text className="text-white text-xl font-bold mt-0.5">850</Text>
           </View>
         </View>
       </LinearGradient>
+
+      {/* Header - Option 1: Horizontal Compact */}
+      {/* <LinearGradient 
+        colors={['#f59e0b', '#f97316']} 
+        className="px-6 pt-10 pb-4 rounded-b-2xl"
+      >
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1">
+            <Text className="text-white/80 text-xs">Welcome, {user?.name}</Text>
+            <TouchableOpacity 
+              className="bg-white/25 rounded-xl p-3 border border-white/30 mt-2"
+              onPress={() => router.push('/joinClass')}
+              activeOpacity={0.8}
+            >
+              <View className="flex-row items-center justify-between">
+                <View className="flex-1">
+                  <Text className="text-white/90 text-xs font-medium">CURRENT CLASS</Text>
+                  <Text className="text-white text-base font-bold mt-0.5">
+                    {currentClass?.name || 'No class selected'}
+                  </Text>
+                  {currentClass && (
+                    <Text className="text-white/80 text-xs mt-0.5">{currentClass.joinCode}</Text>
+                  )}
+                </View>
+                <BookOpen size={20} color="rgba(255,255,255,0.9)" />
+              </View>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity className="p-2 bg-white/20 rounded-lg ml-3">
+            <Bell size={18} color="white" />
+          </TouchableOpacity>
+        </View>
+      </LinearGradient> */}
+
+      {/* Option 2: Centered Minimal */}
+      {/* <LinearGradient 
+        colors={['#f59e0b', '#f97316']} 
+        className="px-6 pt-10 pb-4 rounded-b-2xl"
+      >
+        <View className="items-center mb-3">
+          <Text className="text-white/80 text-xs">Welcome back</Text>
+          <Text className="text-white text-xl font-bold mt-0.5">{user?.name}</Text>
+        </View>
+        
+        <View className="flex-row items-center gap-2">
+          <TouchableOpacity 
+            className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30"
+            onPress={() => router.push('/joinClass')}
+            activeOpacity={0.8}
+          >
+            <View className="items-center">
+              <BookOpen size={18} color="rgba(255,255,255,0.9)" />
+              <Text className="text-white/90 text-xs font-medium mt-1">CLASS</Text>
+              <Text className="text-white text-sm font-bold mt-0.5">
+                {currentClass?.name || 'Select'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity className="bg-white/25 rounded-xl p-3 border border-white/30">
+            <View className="items-center px-2">
+              <Bell size={18} color="white" />
+              <Text className="text-white text-xs mt-1">Alerts</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient> */}
+
+      {/* Option 3: Split Layout */}
+      {/* <LinearGradient 
+        colors={['#f59e0b', '#f97316']} 
+        className="px-6 pt-10 pb-4 rounded-b-2xl"
+      >
+        <View className="flex-row justify-between items-center mb-3">
+          <View>
+            <Text className="text-white text-lg font-bold">{user?.name}</Text>
+            <Text className="text-white/70 text-xs mt-0.5">Staff Member</Text>
+          </View>
+          <TouchableOpacity className="p-2 bg-white/20 rounded-lg">
+            <Bell size={16} color="white" />
+          </TouchableOpacity>
+        </View>
+        
+        <TouchableOpacity 
+          className="bg-white/25 rounded-xl p-3 border border-white/30"
+          onPress={() => router.push('/joinClass')}
+          activeOpacity={0.8}
+        >
+          <View className="flex-row items-center gap-3">
+            <View className="w-10 h-10 bg-white/20 rounded-lg items-center justify-center">
+              <BookOpen size={18} color="rgba(255,255,255,0.9)" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-white/90 text-xs font-medium">CURRENT CLASS</Text>
+              <Text className="text-white text-base font-bold">
+                {currentClass?.name || 'No class'}
+              </Text>
+              {currentClass && (
+                <Text className="text-white/80 text-xs mt-0.5">{currentClass.joinCode}</Text>
+              )}
+            </View>
+            <Text className="text-white text-base">→</Text>
+          </View>
+        </TouchableOpacity>
+      </LinearGradient> */}
+
+      {/* Option 4: Stacked Cards */}
+      {/* <LinearGradient 
+        colors={['#f59e0b', '#f97316']} 
+        className="px-6 pt-10 pb-4 rounded-b-2xl"
+      >
+        <View className="flex-row justify-between items-center mb-3">
+          <Text className="text-white text-xl font-bold">{user?.name}</Text>
+          <TouchableOpacity className="p-2 bg-white/20 rounded-lg">
+            <Bell size={18} color="white" />
+          </TouchableOpacity>
+        </View>
+        
+        <View className="flex-row gap-2">
+          <TouchableOpacity 
+            className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30"
+            onPress={() => router.push('/joinClass')}
+            activeOpacity={0.8}
+          >
+            <BookOpen size={16} color="rgba(255,255,255,0.9)" />
+            <Text className="text-white/90 text-xs font-medium mt-1">CLASS</Text>
+            <Text className="text-white text-sm font-bold mt-0.5" numberOfLines={1}>
+              {currentClass?.name || 'None'}
+            </Text>
+          </TouchableOpacity>
+          
+          <View className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30">
+            <Award size={16} color="rgba(255,255,255,0.9)" />
+            <Text className="text-white/90 text-xs font-medium mt-1">POINTS</Text>
+            <Text className="text-white text-sm font-bold mt-0.5">850</Text>
+          </View>
+        </View>
+      </LinearGradient> */}
 
       <ScrollView className="flex-1 px-4 py-6" showsVerticalScrollIndicator={false}>
         {/* Stats Grid */}
