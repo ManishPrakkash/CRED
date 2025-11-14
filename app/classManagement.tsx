@@ -2,6 +2,7 @@ import BottomNav from '@/components/BottomNav';
 import DeleteClassModal from '@/components/DeleteClassModal';
 import { useClasses } from '@/contexts/ClassContext';
 import { mockStudents } from '@/services/mockData';
+import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BookOpen, Check, Copy, Plus, Search, Trash2, Users, X } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -78,9 +79,13 @@ const ClassManagementScreen = () => {
     );
   };
 
-  const copyToClipboard = (text: string) => {
-    // In a real app, this would copy to clipboard
-    Alert.alert('Copied', `${text} copied to clipboard!`);
+  const copyToClipboard = async (text: string) => {
+    try {
+      await Clipboard.setStringAsync(text);
+      Alert.alert('Copied', `${text} copied to clipboard!`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to copy to clipboard');
+    }
   };
 
   const handleApproveStudent = (requestId: string, classId: string) => {
@@ -134,40 +139,26 @@ const ClassManagementScreen = () => {
 
   const renderClassItem = ({ item }: { item: any }) => (
     <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
-      <TouchableOpacity 
-        onPress={() => setSelectedClass(item)}
-        className="flex-row items-center justify-between mb-3"
-      >
-        <View className="flex-row items-center flex-1">
+      <View className="flex-row items-center justify-between">
+        <TouchableOpacity 
+          onPress={() => setSelectedClass(item)}
+          className="flex-row items-center flex-1"
+        >
           <View className="w-12 h-12 rounded-xl bg-orange-100 items-center justify-center">
             <BookOpen size={24} color="#f59e0b" />
           </View>
           <View className="ml-3 flex-1">
             <Text className="font-bold text-gray-800 text-lg">{item.name}</Text>
+            <View className="flex-row items-center bg-orange-50 px-2 py-1 rounded-full mt-1 self-start">
+              <Users size={12} color="#f59e0b" />
+              <Text className="text-orange-700 ml-1 font-medium text-xs">{item.studentCount} Students</Text>
+            </View>
           </View>
-        </View>
-        
-        <View className="flex-row items-center bg-orange-50 px-3 py-1 rounded-full">
-          <Users size={14} color="#f59e0b" />
-          <Text className="text-orange-700 ml-1 font-medium">{item.studentCount}</Text>
-        </View>
-      </TouchableOpacity>
-      
-      <View className="flex-row items-center justify-between pt-3 border-t border-gray-100">
-        <View className="flex-row items-center flex-1">
-          <Text className="text-gray-500 mr-2">Join Code:</Text>
-          <Text className="font-mono text-gray-700">{item.joinCode}</Text>
-          <TouchableOpacity 
-            className="ml-2"
-            onPress={() => copyToClipboard(item.joinCode)}
-          >
-            <Copy size={16} color="#64748b" />
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
         
         <TouchableOpacity
           onPress={() => handleDeleteClass(item)}
-          className="bg-red-50 p-2 rounded-lg ml-3"
+          className="bg-red-50 p-2.5 rounded-lg ml-3"
         >
           <Trash2 size={18} color="#ef4444" />
         </TouchableOpacity>
