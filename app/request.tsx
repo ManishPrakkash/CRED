@@ -27,14 +27,14 @@ export default function RequestManagementScreen() {
   // Route to role-specific request component
   if (user.role === 'advisor') {
     return <AdvisorRequest />;
-  } else if (user.role === 'representative') {
+  } else if (user.role === 'staff') {
     return <RepresentativeRequest />;
   }
 
-  // Students don't have access to request management
+  // No access for other roles
   return (
     <View className="flex-1 items-center justify-center bg-gray-50">
-      <Text className="text-gray-600">Access restricted to representatives and advisors</Text>
+      <Text className="text-gray-600">Access restricted</Text>
     </View>
   );
 }
