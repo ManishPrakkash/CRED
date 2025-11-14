@@ -111,8 +111,8 @@ export default function AdvisorRequest() {
       
       <Text className="text-gray-700 mb-2">{item.reason}</Text>
       
-      <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-gray-100">
-        <View>
+      <View className="mt-3 pt-3 border-t border-gray-100">
+        <View className="mb-3">
           <Text className="text-gray-500 text-xs">Submitted by: {item.submittedBy}</Text>
           <Text className="text-gray-400 text-xs">{item.date} • {item.time}</Text>
         </View>
@@ -120,14 +120,14 @@ export default function AdvisorRequest() {
         <View className="flex-row gap-2">
           <TouchableOpacity 
             onPress={() => handleApprove(item.id)}
-            className="bg-green-100 px-4 py-2 rounded-lg flex-row items-center"
+            className="flex-1 bg-green-100 px-4 py-2 rounded-lg flex-row items-center justify-center"
           >
             <Check size={16} color="#10b981" />
             <Text className="text-green-700 ml-1 font-medium">Approve</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             onPress={() => handleReject(item.id)}
-            className="bg-red-100 px-4 py-2 rounded-lg flex-row items-center"
+            className="flex-1 bg-red-100 px-4 py-2 rounded-lg flex-row items-center justify-center"
           >
             <X size={16} color="#ef4444" />
             <Text className="text-red-700 ml-1 font-medium">Reject</Text>
