@@ -62,8 +62,8 @@ export async function mockLogin(
 
   // Validate password - check role-specific passwords
   const passwordMap: Record<string, string> = {
-    'staff@gmail.com': 'staff123',
-    'advisor@gmail.com': 'advisor123',
+    'staff@gmail.com': 'password',
+    'advisor@gmail.com': 'password',
   };
 
   const normalizedEmail = email.trim().toLowerCase();
