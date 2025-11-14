@@ -1,51 +1,27 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationService } from '@/services/notificationService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Check, Plus, Search, User, X } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { FlatList, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, ScrollView, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+
+const PENDING_REQUESTS_KEY = '@cred_pending_requests_count';
 
 export default function AdvisorRequest() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, markNotificationAsRead, markNotificationAsReadByRequestId } = useAuth();
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTab, setSelectedTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
-  // Mock data for pending requests (from staff members)
-  const pendingRequests = [
-    {
-      id: '1',
-      staffName: 'John Staff',
-      staffId: 'ST001',
-      points: 50,
-      workDescription: 'Conducted lab equipment maintenance and setup for the entire semester',
-      submittedBy: 'John Staff',
-      date: '2023-06-15',
-      time: '10:30 AM',
-      attachments: 2,
-    },
-    {
-      id: '2',
-      staffName: 'Sarah Smith',
-      staffId: 'ST002',
-      points: 30,
-      workDescription: 'Organized student counseling sessions and career guidance workshops',
-      submittedBy: 'Sarah Smith',
-      date: '2023-06-15',
-      time: '09:15 AM',
-      attachments: 0,
-    },
-    {
-      id: '3',
-      staffName: 'Mike Johnson',
-      staffId: 'ST003',
-      points: 40,
-      workDescription: 'Conducted extra workshop on advanced programming topics',
-      submittedBy: 'Mike Johnson',
-      date: '2023-06-14',
-      time: '02:30 PM',
-      attachments: 1,
-    },
-  ];
+  // Get pending requests from notifications
+  const pendingRequests = (user?.notifications || [])
+    .filter(n => n.type === 'request_submitted' && !n.read && n.requestData)
+    .map(n => n.requestData)
+    .filter(Boolean);
 
   const historyRequests = [
     {
@@ -84,70 +60,137 @@ export default function AdvisorRequest() {
     },
   ];
 
-  const handleApprove = (id: string) => {
-    alert(`Request ${id} approved`);
+  const decrementPendingCount = async () => {
+    try {
+      const currentCount = await AsyncStorage.getItem(PENDING_REQUESTS_KEY);
+      const newCount = Math.max(0, (currentCount ? parseInt(currentCount) : 0) - 1);
+      await AsyncStorage.setItem(PENDING_REQUESTS_KEY, newCount.toString());
+    } catch (error) {
+      console.error('Failed to update pending count:', error);
+    }
   };
 
-  const handleReject = (id: string) => {
-    alert(`Request ${id} rejected`);
+  const handleApprove = async (id: string) => {
+    const request = pendingRequests.find(r => r.id === id);
+    if (!request) return;
+
+    // Send notification to staff
+    await NotificationService.notifyStaffOfApproval(
+      request.userId,
+      user?.id || '',
+      user?.name || 'HOD',
+      request.id,
+      request.workDescription,
+      request.points
+    );
+
+    // Clear the request_submitted notification for this request
+    await markNotificationAsReadByRequestId(request.id);
+
+    // Decrement pending count
+    await decrementPendingCount();
+
+    Alert.alert('Success', `Request from ${request.staffName} approved for ${request.points} points`);
+  };
+
+  const handleReject = async (id: string) => {
+    const request = pendingRequests.find(r => r.id === id);
+    if (!request) return;
+
+    Alert.prompt(
+      'Reject Request',
+      'Please provide a reason for rejection (optional):',
+      async (reason) => {
+        // Send notification to staff
+        await NotificationService.notifyStaffOfRejection(
+          request.userId,
+          user?.id || '',
+          user?.name || 'HOD',
+          request.id,
+          request.workDescription,
+          reason
+        );
+
+        // Clear the request_submitted notification for this request
+        await markNotificationAsReadByRequestId(request.id);
+
+        // Decrement pending count
+        await decrementPendingCount();
+
+        Alert.alert('Request Rejected', `Request from ${request.staffName} has been rejected`);
+      },
+      'plain-text'
+    );
   };
 
   const renderPendingItem = ({ item }: { item: any }) => (
-    <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
-      <View className="flex-row items-start justify-between mb-3">
-        <View className="flex-1">
-          <View className="flex-row items-center mb-2">
-            <View className="w-10 h-10 rounded-full bg-green-100 items-center justify-center">
-              <User size={20} color="#10b981" />
+    <TouchableOpacity
+      onPress={() => {
+        router.push({
+          pathname: '/requestDetail',
+          params: {
+            requestData: JSON.stringify(item)
+          }
+        });
+      }}
+      activeOpacity={0.7}
+    >
+      <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
+        <View className="flex-row items-start justify-between mb-3">
+          <View className="flex-1">
+            <View className="flex-row items-center mb-2">
+              <View className="w-10 h-10 rounded-full bg-green-100 items-center justify-center">
+                <User size={20} color="#10b981" />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text className="font-bold text-gray-900">{item.staffName}</Text>
+                <Text className="text-gray-500 text-sm">{item.staffId || item.userId}</Text>
+              </View>
             </View>
-            <View className="ml-3 flex-1">
-              <Text className="font-bold text-gray-900">{item.staffName}</Text>
-              <Text className="text-gray-500 text-sm">{item.staffId}</Text>
+            <View className="px-3 py-1 rounded-full self-start bg-orange-100">
+              <Text className="text-sm font-bold text-orange-700">
+                +{item.points} points requested
+              </Text>
             </View>
           </View>
-          <View className="px-3 py-1 rounded-full self-start bg-orange-100">
-            <Text className="text-sm font-bold text-orange-700">
-              +{item.points} points requested
-            </Text>
-          </View>
-        </View>
-      </View>
-      
-      <View className="bg-gray-50 rounded-lg p-3 mb-3">
-        <Text className="text-gray-600 text-xs font-medium mb-1">Work Description:</Text>
-        <Text className="text-gray-800">{item.workDescription}</Text>
-      </View>
-      
-      {item.attachments > 0 && (
-        <View className="flex-row items-center mb-3">
-          <Text className="text-gray-500 text-sm">📎 {item.attachments} attachment{item.attachments > 1 ? 's' : ''}</Text>
-        </View>
-      )}
-      
-      <View className="mt-3 pt-3 border-t border-gray-100">
-        <View className="mb-3">
-          <Text className="text-gray-500 text-xs">Submitted by: {item.submittedBy}</Text>
-          <Text className="text-gray-400 text-xs">{item.date} • {item.time}</Text>
         </View>
         
-        <View className="flex-row gap-2">
-          <TouchableOpacity 
-            onPress={() => handleApprove(item.id)}
-            className="flex-1 bg-green-100 px-4 py-2 rounded-lg flex-row items-center justify-center"
-          >
-            <Check size={16} color="#10b981" />
-            <Text className="text-green-700 ml-1 font-medium">Approve</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => handleReject(item.id)}
-            className="flex-1 bg-red-100 px-4 py-2 rounded-lg flex-row items-center justify-center"
-          >
-            <X size={16} color="#ef4444" />
-            <Text className="text-red-700 ml-1 font-medium">Reject</Text>
-          </TouchableOpacity>
+        <View className="bg-gray-50 rounded-lg p-3 mb-3">
+          <Text className="text-gray-600 text-xs font-medium mb-1">Work Description:</Text>
+          <Text className="text-gray-800">{item.workDescription}</Text>
+        </View>
+        
+        {item.attachments > 0 && (
+          <View className="flex-row items-center mb-3">
+            <Text className="text-gray-500 text-sm">📎 {item.attachments} attachment{item.attachments > 1 ? 's' : ''}</Text>
+          </View>
+        )}
+        
+        <View className="mt-3 pt-3 border-t border-gray-100">
+          <View className="mb-3">
+            <Text className="text-gray-500 text-xs">Submitted by: {item.staffName}</Text>
+            <Text className="text-gray-400 text-xs">{item.date} • {item.time}</Text>
+          </View>
+          
+          <View className="flex-row gap-2">
+            <TouchableOpacity 
+              onPress={() => handleApprove(item.id)}
+              className="flex-1 bg-green-100 px-4 py-2 rounded-lg flex-row items-center justify-center"
+            >
+              <Check size={16} color="#10b981" />
+              <Text className="text-green-700 ml-1 font-medium">Approve</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => handleReject(item.id)}
+              className="flex-1 bg-red-100 px-4 py-2 rounded-lg flex-row items-center justify-center"
+            >
+              <X size={16} color="#ef4444" />
+              <Text className="text-red-700 ml-1 font-medium">Reject</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderHistoryItem = ({ item }: { item: any }) => (
