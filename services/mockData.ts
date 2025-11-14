@@ -2,24 +2,19 @@ import type { User, UserRole } from '@/lib/types';
 
 // Mock user data for different roles
 const mockUsers: Record<UserRole, User> = {
-  student: {
+  staff: {
     id: '1',
-    email: 'student@gmail.com',
-    name: 'John Student',
-    role: 'student',
+    email: 'staff@gmail.com',
+    name: 'John Staff',
+    role: 'staff',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-  },
-  representative: {
-    id: '2',
-    email: 'representative@gmail.com',
-    name: 'Jane Representative',
-    role: 'representative',
-    avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100',
+    joinedClasses: [],
+    currentClassId: null,
   },
   advisor: {
     id: '3',
     email: 'advisor@gmail.com',
-    name: 'Dr. Advisor',
+    name: 'Dr. HOD',
     role: 'advisor',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
   },
@@ -65,13 +60,18 @@ export async function mockLogin(
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  // Validate password
-  if (password !== 'password') {
-    throw new Error('Invalid password');
-  }
+  // Validate password - check role-specific passwords
+  const passwordMap: Record<string, string> = {
+    'staff@gmail.com': 'staff123',
+    'advisor@gmail.com': 'advisor123',
+  };
 
-  // Normalize email for comparison
   const normalizedEmail = email.trim().toLowerCase();
+  const expectedPassword = passwordMap[normalizedEmail];
+
+  if (!expectedPassword || password !== expectedPassword) {
+    throw new Error('Invalid email or password');
+  }
 
   // Auto-detect role from email
   const userEntry = Object.entries(mockUsers).find(
