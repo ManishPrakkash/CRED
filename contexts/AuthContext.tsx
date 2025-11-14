@@ -10,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   joinClass: (joinCode: string) => Promise<void>;
   switchClass: (classId: string) => void;
+  deleteClass: (classId: string) => void;
   hasJoinedClasses: boolean;
 }
 
@@ -143,10 +144,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const deleteClass = (classId: string) => {
+    if (!user) return;
+    
+    const updatedClasses = user.joinedClasses?.filter(c => c.id !== classId) || [];
+    const updatedUser = {
+      ...user,
+      joinedClasses: updatedClasses,
+      // Clear currentClassId if deleting the active class
+      currentClassId: user.currentClassId === classId ? null : user.currentClassId,
+    };
+    
+    setUser(updatedUser);
+  };
+
   const hasJoinedClasses = !!(user?.joinedClasses && user.joinedClasses.length > 0);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, joinClass, switchClass, hasJoinedClasses }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, joinClass, switchClass, deleteClass, hasJoinedClasses }}>
       {children}
     </AuthContext.Provider>
   );
