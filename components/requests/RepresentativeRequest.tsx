@@ -12,92 +12,77 @@ import type { Attachment } from '@/lib/types';
 export default function RepresentativeRequest() {
   const { user } = useAuth();
   const [showSubmitForm, setShowSubmitForm] = useState(false);
-  const [requestType, setRequestType] = useState<'add' | 'subtract'>('add');
-  const [studentId, setStudentId] = useState('');
-  const [points, setPoints] = useState('');
-  const [reason, setReason] = useState('');
+  const [workDescription, setWorkDescription] = useState('');
+  const [requestedPoints, setRequestedPoints] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
+  
+  const currentClass = user?.joinedClasses?.find(c => c.id === user?.currentClassId);
 
-  // Mock data for all requests (no separate pending, just history with statuses)
+  // Mock data for staff work requests
   const allRequests = [
     {
       id: '1',
-      studentName: 'Alex Johnson',
-      studentId: 'S12345',
-      points: 25,
-      type: 'add',
-      reason: 'Outstanding presentation in class',
+      workDescription: 'Conducted lab equipment maintenance and setup for Computer Networks practical',
+      points: 50,
       date: '2023-06-15',
       time: '10:30 AM',
       status: 'pending',
       reviewedBy: null,
       attachments: [
-        { id: '1', name: 'presentation_screenshot.png', uri: 'https://picsum.photos/400/300', type: 'image' as const, size: 245000 },
-        { id: '2', name: 'attendance_sheet.pdf', uri: '', type: 'document' as const, size: 128000, mimeType: 'application/pdf' },
+        { id: '1', name: 'lab_before.jpg', uri: 'https://picsum.photos/400/300', type: 'image' as const, size: 245000 },
+        { id: '2', name: 'lab_after.jpg', uri: 'https://picsum.photos/400/301', type: 'image' as const, size: 312000 },
       ],
     },
     {
       id: '2',
-      studentName: 'Maria Garcia',
-      studentId: 'S67890',
-      points: 15,
-      type: 'subtract',
-      reason: 'Late submission of assignment',
+      workDescription: 'Organized student counseling session for final year students',
+      points: 30,
       date: '2023-06-14',
       time: '09:15 AM',
       status: 'approved',
-      reviewedBy: 'Dr. Advisor',
+      reviewedBy: 'Dr. HOD',
       reviewDate: '2023-06-14',
     },
     {
       id: '3',
-      studentName: 'James Wilson',
-      studentId: 'S11223',
-      points: 10,
-      type: 'add',
-      reason: 'Helping classmates with project',
+      workDescription: 'Conducted extra workshop on Machine Learning fundamentals',
+      points: 40,
       date: '2023-06-13',
       time: '02:20 PM',
       status: 'approved',
-      reviewedBy: 'Dr. Advisor',
+      reviewedBy: 'Dr. HOD',
       reviewDate: '2023-06-13',
       attachments: [
-        { id: '3', name: 'collaboration_photo.jpg', uri: 'https://picsum.photos/400/301', type: 'image' as const, size: 312000 },
+        { id: '3', name: 'workshop_attendance.jpg', uri: 'https://picsum.photos/400/302', type: 'image' as const, size: 287000 },
       ],
     },
     {
       id: '4',
-      studentName: 'Sarah Miller',
-      studentId: 'S44556',
-      points: 20,
-      type: 'subtract',
-      reason: 'Disruptive behavior',
+      workDescription: 'Late submission of monthly activity report',
+      points: 10,
       date: '2023-06-12',
       time: '11:45 AM',
       status: 'rejected',
-      reviewedBy: 'Dr. Advisor',
+      reviewedBy: 'Dr. HOD',
       reviewDate: '2023-06-12',
-      rejectionReason: 'Insufficient evidence',
+      rejectionReason: 'Report submitted after deadline without prior notice',
     },
     {
       id: '5',
-      studentName: 'David Kim',
-      studentId: 'S99887',
-      points: 30,
-      type: 'add',
-      reason: 'Excellent group project leadership',
+      workDescription: 'Mentored junior staff members on teaching methodologies',
+      points: 25,
       date: '2023-06-11',
       time: '03:30 PM',
       status: 'pending',
       reviewedBy: null,
       attachments: [
-        { id: '4', name: 'project_certificate.pdf', uri: '', type: 'document' as const, size: 456000, mimeType: 'application/pdf' },
-        { id: '5', name: 'team_photo.png', uri: 'https://picsum.photos/400/302', type: 'image' as const, size: 523000 },
+        { id: '4', name: 'mentoring_report.pdf', uri: '', type: 'document' as const, size: 456000, mimeType: 'application/pdf' },
+        { id: '5', name: 'session_photo.png', uri: 'https://picsum.photos/400/303', type: 'image' as const, size: 523000 },
       ],
     },
   ];
@@ -233,8 +218,7 @@ export default function RepresentativeRequest() {
   };
 
   const filteredRequests = allRequests.filter(req => {
-    const matchesSearch = req.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         req.studentId.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = req.workDescription.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterStatus === 'all' || req.status === filterStatus;
     
     // Date filtering logic
@@ -252,17 +236,16 @@ export default function RepresentativeRequest() {
   });
 
   const handleSubmitRequest = () => {
-    if (!studentId || !points || !reason) {
-      Alert.alert('Missing Information', 'Please fill all required fields');
+    if (!workDescription || !requestedPoints) {
+      Alert.alert('Missing Information', 'Please provide work description and requested points');
       return;
     }
     Alert.alert(
       'Success',
-      `Request submitted for ${studentId}: ${requestType === 'add' ? '+' : '-'}${points} points${attachments.length > 0 ? ` with ${attachments.length} attachment(s)` : ''}`
+      `Work request submitted: ${requestedPoints} points${attachments.length > 0 ? ` with ${attachments.length} attachment(s)` : ''}\nYour request will be reviewed by the HOD.`
     );
-    setStudentId('');
-    setPoints('');
-    setReason('');
+    setWorkDescription('');
+    setRequestedPoints('');
     setAttachments([]);
     setShowSubmitForm(false);
   };
@@ -287,28 +270,22 @@ export default function RepresentativeRequest() {
       <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
         <View className="flex-row items-start justify-between mb-3">
           <View className="flex-1">
-            <View className="flex-row items-center mb-2">
-              <View className="w-10 h-10 rounded-full bg-green-100 items-center justify-center">
-                <User size={20} color="#10b981" />
-              </View>
-              <View className="ml-3 flex-1">
-                <Text className="font-bold text-gray-900">{item.studentName}</Text>
-                <Text className="text-gray-500 text-sm">{item.studentId}</Text>
-              </View>
-            </View>
+            <Text className="text-gray-500 text-xs mb-1">{item.date} • {item.time}</Text>
           </View>
           <View className={`px-3 py-1 rounded-full ${statusColors.bg} border ${statusColors.border}`}>
             <Text className={`text-xs font-bold ${statusColors.text} capitalize`}>{item.status}</Text>
           </View>
         </View>
 
-        <View className={`px-3 py-1 rounded-full self-start mb-2 ${item.type === 'add' ? 'bg-green-50' : 'bg-red-50'}`}>
-          <Text className={`text-sm font-bold ${item.type === 'add' ? 'text-green-700' : 'text-red-700'}`}>
-            {item.type === 'add' ? '+' : '-'}{item.points} points
+        <View className="px-3 py-2 rounded-lg bg-gray-50 mb-3">
+          <Text className="text-gray-800 font-medium">{item.workDescription}</Text>
+        </View>
+
+        <View className="px-3 py-1 rounded-full self-start mb-2 bg-orange-50">
+          <Text className="text-sm font-bold text-orange-700">
+            {item.points} CredPoints
           </Text>
         </View>
-        
-        <Text className="text-gray-700 mb-3">{item.reason}</Text>
         
         {/* Attachments Preview */}
         {item.attachments && item.attachments.length > 0 && (
@@ -348,19 +325,14 @@ export default function RepresentativeRequest() {
         )}
         
         <View className="pt-3 border-t border-gray-100">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-gray-500 text-xs">Submitted: {item.date} • {item.time}</Text>
-              {item.reviewedBy && (
-                <Text className="text-gray-500 text-xs mt-1">
-                  Reviewed by: {item.reviewedBy} {item.reviewDate && `on ${item.reviewDate}`}
-                </Text>
-              )}
-            </View>
-          </View>
+          {item.reviewedBy && (
+            <Text className="text-gray-500 text-xs mb-2">
+              Reviewed by: {item.reviewedBy} {item.reviewDate && `on ${item.reviewDate}`}
+            </Text>
+          )}
           {item.status === 'rejected' && item.rejectionReason && (
-            <View className="mt-2 bg-red-50 rounded-lg p-2">
-              <Text className="text-red-700 text-xs font-medium">Reason: {item.rejectionReason}</Text>
+            <View className="bg-red-50 rounded-lg p-2">
+              <Text className="text-red-700 text-xs font-medium">Rejection Reason: {item.rejectionReason}</Text>
             </View>
           )}
         </View>
@@ -379,11 +351,16 @@ export default function RepresentativeRequest() {
     <View className="flex-1 bg-gray-50">
       {/* Header */}
       <LinearGradient 
-        colors={['#10b981', '#059669']} 
+        colors={['#f59e0b', '#f97316']} 
         className="pt-12 pb-6 px-6 rounded-b-3xl"
       >
-        <Text className="text-2xl font-bold text-white">Request Management</Text>
-        <Text className="text-white/90 mt-1">Submit and track point change requests</Text>
+        <Text className="text-2xl font-bold text-white">Work Request</Text>
+        <Text className="text-white/90 mt-1">Submit work evidence and track your requests</Text>
+        {currentClass && (
+          <View className="mt-3 bg-white/20 rounded-lg px-3 py-2">
+            <Text className="text-white text-sm font-medium">{currentClass.className} • {currentClass.classCode}</Text>
+          </View>
+        )}
       </LinearGradient>
 
       <ScrollView className="flex-1 px-4 py-6" showsVerticalScrollIndicator={false}>
@@ -413,78 +390,53 @@ export default function RepresentativeRequest() {
         {/* Submit New Request Button */}
         <TouchableOpacity 
           onPress={() => setShowSubmitForm(!showSubmitForm)}
-          className="bg-white rounded-xl p-4 mb-6 shadow-sm border-2 border-green-200 flex-row items-center justify-between"
+          className="bg-white rounded-xl p-4 mb-6 shadow-sm border-2 border-orange-200 flex-row items-center justify-between"
         >
           <View className="flex-row items-center">
-            <View className="w-12 h-12 rounded-full bg-green-100 items-center justify-center">
-              <Plus size={24} color="#10b981" />
+            <View className="w-12 h-12 rounded-full bg-orange-100 items-center justify-center">
+              <Plus size={24} color="#f97316" />
             </View>
             <View className="ml-3">
-              <Text className="font-bold text-gray-900">Submit New Request</Text>
-              <Text className="text-gray-600 text-sm">Request point changes for students</Text>
+              <Text className="font-bold text-gray-900">Submit New Work Request</Text>
+              <Text className="text-gray-600 text-sm">Request CredPoints for your work</Text>
             </View>
           </View>
         </TouchableOpacity>
 
         {/* Submit Form */}
         {showSubmitForm && (
-          <View className="bg-white rounded-xl p-5 mb-6 shadow-sm border border-green-200">
-            <Text className="text-lg font-bold text-gray-900 mb-4">New Request</Text>
+          <View className="bg-white rounded-xl p-5 mb-6 shadow-sm border border-orange-200">
+            <Text className="text-lg font-bold text-gray-900 mb-4">New Work Request</Text>
             
             <View className="mb-4">
-              <Text className="text-gray-700 font-medium mb-2">Request Type</Text>
-              <View className="flex-row gap-3">
-                <TouchableOpacity 
-                  onPress={() => setRequestType('add')}
-                  className={`flex-1 py-3 rounded-lg items-center ${requestType === 'add' ? 'bg-green-100 border-2 border-green-400' : 'bg-gray-100'}`}
-                >
-                  <Text className={`font-bold ${requestType === 'add' ? 'text-green-700' : 'text-gray-600'}`}>Credit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={() => setRequestType('subtract')}
-                  className={`flex-1 py-3 rounded-lg items-center ${requestType === 'subtract' ? 'bg-red-100 border-2 border-red-400' : 'bg-gray-100'}`}
-                >
-                  <Text className={`font-bold ${requestType === 'subtract' ? 'text-red-700' : 'text-gray-600'}`}>Debit</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View className="mb-4">
-              <Text className="text-gray-700 font-medium mb-2">Student ID</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3"
-                placeholder="Enter student ID"
-                value={studentId}
-                onChangeText={setStudentId}
-              />
-            </View>
-            
-            <View className="mb-4">
-              <Text className="text-gray-700 font-medium mb-2">Points</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3"
-                placeholder="Enter points"
-                keyboardType="numeric"
-                value={points}
-                onChangeText={setPoints}
-              />
-            </View>
-            
-            <View className="mb-4">
-              <Text className="text-gray-700 font-medium mb-2">Reason</Text>
+              <Text className="text-gray-700 font-medium mb-2">Work Description *</Text>
               <TextInput
                 className="border border-gray-300 rounded-lg p-3 h-24"
-                placeholder="Provide detailed reason for this request"
+                placeholder="Describe the work you completed (e.g., Lab maintenance, Student counseling, Workshop conducted)"
                 multiline
-                value={reason}
-                onChangeText={setReason}
+                value={workDescription}
+                onChangeText={setWorkDescription}
+              />
+            </View>
+            
+            <View className="mb-4">
+              <Text className="text-gray-700 font-medium mb-2">Requested CredPoints *</Text>
+              <TextInput
+                className="border border-gray-300 rounded-lg p-3"
+                placeholder="Enter points (e.g., 30, 50)"
+                keyboardType="numeric"
+                value={requestedPoints}
+                onChangeText={setRequestedPoints}
               />
             </View>
 
             {/* Attachments Section */}
             <View className="mb-4">
               <Text className="text-gray-700 font-medium mb-2">
-                Attachments (Optional)
+                Evidence/Attachments (Recommended)
+              </Text>
+              <Text className="text-gray-500 text-xs mb-3">
+                Upload photos, documents, or certificates as proof of work
               </Text>
               
               {/* Attachment Buttons */}
@@ -570,9 +522,9 @@ export default function RepresentativeRequest() {
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={handleSubmitRequest}
-                className="flex-1 bg-green-600 py-3 rounded-lg items-center"
+                className="flex-1 bg-orange-600 py-3 rounded-lg items-center"
               >
-                <Text className="text-white font-bold">Submit Request</Text>
+                <Text className="text-white font-bold">Submit to HOD</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -584,7 +536,7 @@ export default function RepresentativeRequest() {
             <Search size={20} color="#64748b" />
             <TextInput
               className="flex-1 ml-2 text-gray-800"
-              placeholder="Search student..."
+              placeholder="Search work description..."
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
@@ -607,7 +559,7 @@ export default function RepresentativeRequest() {
                 onPress={() => setFilterStatus(status as any)}
                 className={`px-4 py-2 rounded-full ${
                   filterStatus === status 
-                    ? 'bg-green-600' 
+                    ? 'bg-orange-600' 
                     : 'bg-gray-100'
                 }`}
               >
@@ -625,8 +577,8 @@ export default function RepresentativeRequest() {
 
         {/* Active Date Filter Display */}
         {selectedDate && (
-          <View className="bg-green-50 rounded-xl px-4 py-3 mb-4 flex-row items-center justify-between border border-green-200">
-            <Text className="text-green-800 text-sm flex-1">
+          <View className="bg-orange-50 rounded-xl px-4 py-3 mb-4 flex-row items-center justify-between border border-orange-200">
+            <Text className="text-orange-800 text-sm flex-1">
               Showing requests from <Text className="font-bold">{formatDateDisplay(selectedDate)}</Text>
             </Text>
             <TouchableOpacity onPress={clearDate}>
@@ -654,7 +606,7 @@ export default function RepresentativeRequest() {
                       Select Date
                     </Text>
                     <TouchableOpacity onPress={handleIOSDone}>
-                      <Text className="text-green-600 font-bold">Done</Text>
+                      <Text className="text-orange-600 font-bold">Done</Text>
                     </TouchableOpacity>
                   </View>
                   <DateTimePicker
@@ -693,7 +645,7 @@ export default function RepresentativeRequest() {
                 <Text className="text-gray-500 text-center">
                   {searchQuery || filterStatus !== 'all' 
                     ? 'No requests match your filters' 
-                    : 'No requests yet. Submit your first request!'}
+                    : 'No work requests yet. Submit your first work request to earn CredPoints!'}
                 </Text>
               </View>
             }
