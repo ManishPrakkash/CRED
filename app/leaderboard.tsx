@@ -1,17 +1,41 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
+import { useClasses } from '@/contexts/ClassContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Trophy, TrendingUp, TrendingDown, Award, AlertCircle } from 'lucide-react-native';
-import React, { useState } from 'react';
+import { AlertCircle, Award, TrendingDown, TrendingUp, Trophy } from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { mockLeaderboardStudents, type LeaderboardStudent } from '@/services/mockData';
 
 export default function LeaderboardScreen() {
   const { user, isLoading } = useAuth();
+  const { classes } = useClasses();
   const [activeTab, setActiveTab] = useState<'green' | 'red'>('green');
 
-  // Use mock data from services
-  const allStudents: LeaderboardStudent[] = mockLeaderboardStudents;
+  // Get all students from all classes
+  const allStudents = useMemo(() => {
+    const studentMap = new Map();
+    
+    classes.forEach(cls => {
+      cls.students.forEach(student => {
+        // Use student ID to avoid duplicates if student is in multiple classes
+        if (!studentMap.has(student.id)) {
+          studentMap.set(student.id, {
+            id: student.id,
+            name: student.name,
+            studentId: student.email.split('@')[0].toUpperCase(), // Generate student ID from email
+            credPoints: student.credPoints || 0,
+            avatar: student.avatar
+          });
+        } else {
+          // If student exists in multiple classes, sum their points
+          const existing = studentMap.get(student.id);
+          existing.credPoints += (student.credPoints || 0);
+        }
+      });
+    });
+    
+    return Array.from(studentMap.values());
+  }, [classes]);
 
   // Separate students into green (>=1500) and red (<1500) leaderboards
   const greenLeaderboard = allStudents
@@ -52,7 +76,7 @@ export default function LeaderboardScreen() {
     }
   };
 
-  const renderLeaderboardItem = (student: LeaderboardStudent, index: number, isGreen: boolean) => {
+  const renderLeaderboardItem = (student: any, index: number, isGreen: boolean) => {
     const rank = index + 1;
     const isTopThree = rank <= 3;
     
@@ -164,58 +188,70 @@ export default function LeaderboardScreen() {
       </LinearGradient>
 
       <ScrollView className="flex-1 px-4 py-6" showsVerticalScrollIndicator={false}>
-        {/* Stats Card */}
-        <View className="bg-white rounded-xl p-4 mb-6 shadow-sm">
-          <View className="flex-row items-center mb-3">
-            <Award size={20} color="#64748b" />
-            <Text className="text-gray-700 font-bold ml-2">Statistics</Text>
+        {allStudents.length === 0 ? (
+          <View className="bg-white rounded-xl p-8 items-center mt-8">
+            <Trophy size={64} color="#cbd5e1" />
+            <Text className="text-gray-700 font-bold text-lg mt-4">No Students Yet</Text>
+            <Text className="text-gray-500 text-center mt-2">
+              Create classes and add students to see the leaderboard
+            </Text>
           </View>
-          <View className="flex-row justify-between">
-            <View className="items-center">
-              <Text className="text-2xl font-bold text-green-600">{greenLeaderboard.length}</Text>
-              <Text className="text-gray-500 text-xs mt-1">≥1500 points</Text>
+        ) : (
+          <>
+            {/* Stats Card */}
+            <View className="bg-white rounded-xl p-4 mb-6 shadow-sm">
+              <View className="flex-row items-center mb-3">
+                <Award size={20} color="#64748b" />
+                <Text className="text-gray-700 font-bold ml-2">Statistics</Text>
+              </View>
+              <View className="flex-row justify-between">
+                <View className="items-center">
+                  <Text className="text-2xl font-bold text-green-600">{greenLeaderboard.length}</Text>
+                  <Text className="text-gray-500 text-xs mt-1">≥1500 points</Text>
+                </View>
+                <View className="items-center">
+                  <Text className="text-2xl font-bold text-red-600">{redLeaderboard.length}</Text>
+                  <Text className="text-gray-500 text-xs mt-1">&lt;1500 points</Text>
+                </View>
+                <View className="items-center">
+                  <Text className="text-2xl font-bold text-gray-900">{allStudents.length}</Text>
+                  <Text className="text-gray-500 text-xs mt-1">Total Students</Text>
+                </View>
+              </View>
             </View>
-            <View className="items-center">
-              <Text className="text-2xl font-bold text-red-600">{redLeaderboard.length}</Text>
-              <Text className="text-gray-500 text-xs mt-1">&lt;1500 points</Text>
-            </View>
-            <View className="items-center">
-              <Text className="text-2xl font-bold text-gray-900">{allStudents.length}</Text>
-              <Text className="text-gray-500 text-xs mt-1">Total Students</Text>
-            </View>
-          </View>
-        </View>
 
-        {/* Green Leaderboard */}
-        {activeTab === 'green' && (
-          <View>
-            {greenLeaderboard.length > 0 ? (
-              greenLeaderboard.map((student, index) => renderLeaderboardItem(student, index, true))
-            ) : (
-              <View className="bg-white rounded-xl p-8 items-center">
-                <AlertCircle size={48} color="#64748b" />
-                <Text className="text-gray-500 text-center mt-4">
-                  No students with 1500+ CRED points yet
-                </Text>
+            {/* Green Leaderboard */}
+            {activeTab === 'green' && (
+              <View>
+                {greenLeaderboard.length > 0 ? (
+                  greenLeaderboard.map((student, index) => renderLeaderboardItem(student, index, true))
+                ) : (
+                  <View className="bg-white rounded-xl p-8 items-center">
+                    <AlertCircle size={48} color="#64748b" />
+                    <Text className="text-gray-500 text-center mt-4">
+                      No students with 1500+ CRED points yet
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
-          </View>
-        )}
 
-        {/* Red Leaderboard */}
-        {activeTab === 'red' && (
-          <View>
-            {redLeaderboard.length > 0 ? (
-              redLeaderboard.map((student, index) => renderLeaderboardItem(student, index, false))
-            ) : (
-              <View className="bg-white rounded-xl p-8 items-center">
-                <Award size={48} color="#10b981" />
-                <Text className="text-gray-500 text-center mt-4">
-                  All students are performing excellently!
-                </Text>
+            {/* Red Leaderboard */}
+            {activeTab === 'red' && (
+              <View>
+                {redLeaderboard.length > 0 ? (
+                  redLeaderboard.map((student, index) => renderLeaderboardItem(student, index, false))
+                ) : (
+                  <View className="bg-white rounded-xl p-8 items-center">
+                    <Award size={48} color="#10b981" />
+                    <Text className="text-gray-500 text-center mt-4">
+                      All students are performing excellently!
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
-          </View>
+          </>
         )}
 
         <View className="h-6" />
