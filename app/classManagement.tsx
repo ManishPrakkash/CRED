@@ -1,13 +1,14 @@
 import BottomNav from '@/components/BottomNav';
 import DeleteClassModal from '@/components/DeleteClassModal';
 import { useClasses } from '@/contexts/ClassContext';
+import { mockStudents } from '@/services/mockData';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BookOpen, Check, Copy, Plus, Search, Trash2, Users, X } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, FlatList, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const ClassManagementScreen = () => {
-  const { classes, pendingRequests, createClass, approvePendingRequest, rejectPendingRequest, deleteClass } = useClasses();
+  const { classes, pendingRequests, createClass, approvePendingRequest, rejectPendingRequest, deleteClass, removeStudentFromClass, addStudentToClass } = useClasses();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showPendingRequests, setShowPendingRequests] = useState(false);
   const [className, setClassName] = useState('');
@@ -15,6 +16,7 @@ const ClassManagementScreen = () => {
   const [selectedClass, setSelectedClass] = useState<any>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [classToDelete, setClassToDelete] = useState<any>(null);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
 
   const handleCreateClass = () => {
     if (!className.trim()) {
@@ -23,11 +25,57 @@ const ClassManagementScreen = () => {
     }
 
     const newClass = createClass(className);
+    
+    // Automatically add 10 students to the new class
+    mockStudents.slice(0, 10).forEach(student => {
+      addStudentToClass(newClass.id, student);
+    });
+    
     setClassName('');
     setShowCreateForm(false);
     Alert.alert('Success', `Class created successfully!\n\nJoin Code: ${newClass.joinCode}`, [
       { text: 'OK' }
     ]);
+  };
+
+  const handleRemoveStudent = (studentId: string, studentName: string) => {
+    if (!selectedClass) return;
+    
+    // First confirmation
+    Alert.alert(
+      'Remove Student',
+      `Are you sure you want to remove ${studentName} from ${selectedClass.name}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            // Second confirmation
+            Alert.alert(
+              'Final Confirmation',
+              `This will permanently remove ${studentName} from the class. This action cannot be undone.`,
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Remove',
+                  style: 'destructive',
+                  onPress: () => {
+                    removeStudentFromClass(selectedClass.id, studentId);
+                    // Update the selected class to reflect changes
+                    const updatedClass = classes.find(c => c.id === selectedClass.id);
+                    if (updatedClass) {
+                      setSelectedClass(updatedClass);
+                    }
+                    Alert.alert('Success', `${studentName} has been removed from the class`);
+                  }
+                }
+              ]
+            );
+          }
+        }
+      ]
+    );
   };
 
   const copyToClipboard = (text: string) => {
@@ -294,64 +342,161 @@ const ClassManagementScreen = () => {
         </View>
       </ScrollView>
       
-      {/* Student Roster Modal */}
-      {selectedClass && (
-        <View className="absolute top-0 left-0 right-0 bottom-0 bg-black/50 items-center justify-center p-4">
-          <View className="bg-white rounded-2xl w-full max-w-md max-h-[80%]">
-            <View className="p-5 border-b border-gray-100">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-xl font-bold text-gray-800">{selectedClass.name}</Text>
-                <TouchableOpacity onPress={() => setSelectedClass(null)}>
-                  <Text className="text-blue-600 font-bold">Close</Text>
-                </TouchableOpacity>
-              </View>
-              <Text className="text-gray-500 mt-1">Student Roster ({selectedClass.studentCount} students)</Text>
-            </View>
-            
-            <View className="p-5">
-              <View className="flex-row items-center bg-gray-100 rounded-lg p-3 mb-4">
-                <Text className="text-gray-700 font-medium">Join Code: {selectedClass.joinCode}</Text>
+      {/* Full Screen Class Details Modal */}
+      <Modal
+        visible={selectedClass !== null}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => {
+          setSelectedClass(null);
+          setStudentSearchQuery('');
+        }}
+      >
+        {selectedClass && (
+          <View className="flex-1 bg-white">
+            {/* Header */}
+            <LinearGradient
+              colors={['#f59e0b', '#ea580c']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="pt-10 pb-3 px-4"
+            >
+              {/* Top Bar - Close Button Right */}
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-1">
+                  <Text className="text-white text-lg font-bold" numberOfLines={1}>{selectedClass.name}</Text>
+                  <View className="flex-row items-center mt-1">
+                    <Users size={12} color="#fff" />
+                    <Text className="text-white/80 text-xs ml-1">{selectedClass.studentCount} Students</Text>
+                    <Text className="text-white/60 text-xs mx-2">•</Text>
+                    <Text className="text-white/80 text-xs">Avg: {selectedClass.students.length > 0 
+                      ? Math.round(selectedClass.students.reduce((sum: number, s: any) => sum + (s.credPoints || 0), 0) / selectedClass.students.length)
+                      : 0} pts</Text>
+                  </View>
+                </View>
                 <TouchableOpacity 
-                  className="ml-auto"
-                  onPress={() => copyToClipboard(selectedClass.joinCode)}
+                  onPress={() => {
+                    setSelectedClass(null);
+                    setStudentSearchQuery('');
+                  }}
+                  className="bg-white/20 rounded-lg p-2 ml-3"
+                  activeOpacity={0.8}
                 >
-                  <Copy size={16} color="#2563eb" />
+                  <X size={18} color="#fff" />
                 </TouchableOpacity>
               </View>
               
-              <Text className="font-bold text-gray-800 mb-3">Students</Text>
-              <ScrollView className="max-h-60">
-                {selectedClass.students.length > 0 ? (
-                  selectedClass.students.map((student: any, index: number) => (
-                    <View key={index} className="flex-row items-center py-3 border-b border-gray-100">
-                      <Image 
-                        source={{ uri: student.avatar }} 
-                        className="w-10 h-10 rounded-full"
-                      />
-                      <Text className="ml-3 text-gray-800 font-medium">{student.name}</Text>
-                    </View>
-                  ))
-                ) : (
-                  <View className="items-center py-8">
-                    <Users size={48} color="#cbd5e1" />
-                    <Text className="text-gray-500 mt-3">No students enrolled yet</Text>
-                    <Text className="text-gray-400 text-center mt-1">Share the join code for students to enroll</Text>
-                  </View>
+              {/* Compact Join Code */}
+              <View className="bg-white/10 rounded-lg px-3 py-2 flex-row items-center justify-between">
+                <View className="flex-row items-center flex-1">
+                  <Text className="text-white/70 text-xs mr-2">Code:</Text>
+                  <Text className="text-white text-sm font-bold tracking-wider">{selectedClass.joinCode}</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => copyToClipboard(selectedClass.joinCode)}
+                  className="bg-white rounded-md px-3 py-1.5 flex-row items-center"
+                  activeOpacity={0.8}
+                >
+                  <Copy size={14} color="#f59e0b" />
+                  <Text className="text-orange-600 font-bold ml-1.5 text-xs">Copy</Text>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+
+            {/* Search Bar */}
+            <View className="px-4 py-2.5 bg-white border-b border-gray-200">
+              <View className="flex-row items-center bg-gray-50 rounded-lg px-3 py-2 border border-gray-200">
+                <Search size={16} color="#6b7280" />
+                <TextInput
+                  className="flex-1 ml-2 text-gray-800 text-sm"
+                  placeholder="Search students..."
+                  value={studentSearchQuery}
+                  onChangeText={setStudentSearchQuery}
+                  placeholderTextColor="#9ca3af"
+                />
+                {studentSearchQuery.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setStudentSearchQuery('')}
+                    className="bg-gray-200 rounded-full p-1"
+                  >
+                    <X size={14} color="#6b7280" />
+                  </TouchableOpacity>
                 )}
-              </ScrollView>
+              </View>
             </View>
-            
-            <View className="p-5 border-t border-gray-100">
-              <TouchableOpacity 
-                className="bg-orange-600 py-3 rounded-lg items-center"
-                onPress={() => copyToClipboard(selectedClass.joinCode)}
-              >
-                <Text className="text-white font-bold">Copy Join Code</Text>
-              </TouchableOpacity>
-            </View>
+
+            {/* Student List */}
+            <FlatList
+              data={selectedClass.students.filter((student: any) => 
+                student.name.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                student.email.toLowerCase().includes(studentSearchQuery.toLowerCase())
+              )}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 20 }}
+              ListEmptyComponent={
+                <View className="items-center py-16">
+                  <View className="bg-gray-100 rounded-full p-6 mb-4">
+                    <Users size={48} color="#9ca3af" />
+                  </View>
+                  <Text className="text-gray-700 text-lg font-bold">
+                    {studentSearchQuery ? 'No students found' : 'No students enrolled yet'}
+                  </Text>
+                  <Text className="text-gray-500 text-center mt-2 px-8 text-sm">
+                    {studentSearchQuery 
+                      ? 'Try a different search term'
+                      : 'Share the join code for students to enroll'
+                    }
+                  </Text>
+                </View>
+              }
+              renderItem={({ item: student, index }) => (
+                <View className="mb-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <View className="flex-row items-center px-3 py-3">
+                    {/* Rank Badge */}
+                    <View className="bg-orange-500 rounded-lg w-8 h-8 items-center justify-center">
+                      <Text className="text-white font-bold text-xs">{index + 1}</Text>
+                    </View>
+                    
+                    {/* Avatar */}
+                    <Image 
+                      source={{ uri: student.avatar || 'https://i.pravatar.cc/150?img=1' }} 
+                      className="w-11 h-11 rounded-full ml-3 border-2 border-gray-100"
+                    />
+                    
+                    {/* Student Info */}
+                    <View className="flex-1 ml-3 mr-2">
+                      <Text className="text-gray-900 font-semibold text-sm" numberOfLines={1}>
+                        {student.name}
+                      </Text>
+                      <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>
+                        {student.email}
+                      </Text>
+                      {student.credPoints !== undefined && (
+                        <View className="mt-1.5">
+                          <View className="bg-orange-50 self-start rounded-md px-2 py-0.5 border border-orange-200">
+                            <Text className="text-orange-600 text-xs font-bold">
+                              {student.credPoints} points
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                    
+                    {/* Remove Button */}
+                    <TouchableOpacity 
+                      onPress={() => handleRemoveStudent(student.id, student.name)}
+                      className="bg-red-50 rounded-lg p-2.5 border border-red-100"
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={16} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            />
           </View>
-        </View>
-      )}
+        )}
+      </Modal>
       
       {/* Delete Confirmation Modal */}
       <DeleteClassModal
