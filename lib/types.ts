@@ -28,6 +28,16 @@ export interface Student {
   credPoints?: number;
 }
 
+// Attachment interface
+export interface Attachment {
+  id: string;
+  name: string;
+  uri: string;
+  type: 'image' | 'document';
+  size?: number;
+  mimeType?: string;
+}
+
 // Request interface
 export interface Request {
   id: string;
@@ -37,8 +47,13 @@ export interface Request {
   type: 'add' | 'subtract';
   reason: string;
   date: string;
+  time?: string;
   status?: 'approved' | 'rejected' | 'pending';
   avatar?: string;
+  attachments?: Attachment[];
+  reviewedBy?: string | null;
+  reviewDate?: string;
+  rejectionReason?: string;
 }
 
 // Activity interface

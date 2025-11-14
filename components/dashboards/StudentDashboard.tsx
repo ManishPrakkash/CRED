@@ -1,6 +1,7 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import {
     AlertTriangle,
     Award,
@@ -16,6 +17,7 @@ import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function StudentDashboard() {
+  const router = useRouter();
   const { user } = useAuth();
 
   const studentStats = [

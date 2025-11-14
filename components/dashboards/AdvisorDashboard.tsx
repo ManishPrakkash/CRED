@@ -41,7 +41,7 @@ export default function AdvisorDashboard() {
     <View className="flex-1 bg-gray-50">
       {/* Header */}
       <LinearGradient 
-        colors={['#f59e0b', '#f97316']} 
+        colors={['#10b981', '#059669']} 
         className="px-6 pt-12 pb-6 rounded-b-3xl"
       >
         <View className="flex-row justify-between items-center">
