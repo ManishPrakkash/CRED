@@ -1,14 +1,13 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
+import { useClasses } from '@/contexts/ClassContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
-    AlertCircle,
     Bell,
     BookOpen,
     CheckCircle,
     ClipboardList,
-    TrendingUp,
     Users
 } from 'lucide-react-native';
 import React from 'react';
@@ -17,24 +16,15 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 export default function AdvisorDashboard() {
   const router = useRouter();
   const { user } = useAuth();
+  const { classes, pendingRequests, getTotalStats } = useClasses();
+
+  const stats = getTotalStats();
 
   const advisorStats = [
-    { title: 'Total Classes', value: '3', icon: <BookOpen size={20} color="#2563eb" />, color: 'bg-blue-50' },
-    { title: 'Total Students', value: '74', icon: <Users size={20} color="#10b981" />, color: 'bg-green-50' },
-    { title: 'Pending Requests', value: '12', icon: <ClipboardList size={20} color="#f59e0b" />, color: 'bg-orange-50' },
-    { title: 'Approved Today', value: '8', icon: <CheckCircle size={20} color="#8b5cf6" />, color: 'bg-purple-50' },
-  ];
-
-  const recentRequests = [
-    { id: 1, student: 'Alex Johnson', action: 'Add 25 points', class: 'Math 101', status: 'pending', time: '10 min ago' },
-    { id: 2, student: 'Maria Garcia', action: 'Subtract 15 points', class: 'Physics 201', status: 'pending', time: '1 hour ago' },
-    { id: 3, student: 'James Wilson', action: 'Add 10 points', class: 'Chemistry Lab', status: 'approved', time: '2 hours ago' },
-  ];
-
-  const activeClasses = [
-    { id: 1, name: 'Mathematics 101', students: 24, pending: 3, avgPoints: 985 },
-    { id: 2, name: 'Physics Advanced', students: 18, pending: 2, avgPoints: 1020 },
-    { id: 3, name: 'Chemistry Lab', students: 32, pending: 7, avgPoints: 950 },
+    { title: 'Total Classes', value: stats.totalClasses.toString(), icon: <BookOpen size={20} color="#2563eb" />, color: 'bg-blue-50' },
+    { title: 'Total Students', value: stats.totalStudents.toString(), icon: <Users size={20} color="#10b981" />, color: 'bg-green-50' },
+    { title: 'Pending Requests', value: pendingRequests.length.toString(), icon: <ClipboardList size={20} color="#f59e0b" />, color: 'bg-orange-50' },
+    { title: 'Avg Students/Class', value: stats.avgStudentsPerClass.toString(), icon: <CheckCircle size={20} color="#8b5cf6" />, color: 'bg-purple-50' },
   ];
 
   return (
@@ -85,7 +75,7 @@ export default function AdvisorDashboard() {
               </View>
               <View className="flex-1 ml-3">
                 <Text className="text-blue-900 font-semibold">Review Requests</Text>
-                <Text className="text-blue-600 text-xs mt-1">12 pending approvals</Text>
+                <Text className="text-blue-600 text-xs mt-1">{pendingRequests.length} pending approvals</Text>
               </View>
             </TouchableOpacity>
             
@@ -98,80 +88,53 @@ export default function AdvisorDashboard() {
               </View>
               <View className="flex-1 ml-3">
                 <Text className="text-emerald-900 font-semibold">Manage Classes</Text>
-                <Text className="text-emerald-600 text-xs mt-1">View your 3 classes</Text>
+                <Text className="text-emerald-600 text-xs mt-1">{classes.length === 0 ? 'No classes yet' : `View your ${classes.length} class${classes.length !== 1 ? 'es' : ''}`}</Text>
               </View>
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* Recent Requests */}
-        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-gray-900 font-bold text-lg">Recent Requests</Text>
-            <TouchableOpacity onPress={() => router.push('/request')}>
-              <Text className="text-blue-600 text-sm font-medium">View All</Text>
-            </TouchableOpacity>
-          </View>
-          
-          {recentRequests.map((request) => (
-            <View 
-              key={request.id} 
-              className="flex-row items-center py-3 border-b border-gray-100 last:border-0"
-            >
-              <View className={`p-2 rounded-full mr-3 ${request.status === 'pending' ? 'bg-orange-100' : 'bg-green-100'}`}>
-                {request.status === 'pending' ? (
-                  <AlertCircle size={16} color="#f59e0b" />
-                ) : (
-                  <CheckCircle size={16} color="#10b981" />
-                )}
-              </View>
-              <View className="flex-1">
-                <Text className="text-gray-900 font-medium">{request.student}</Text>
-                <Text className="text-gray-600 text-sm">{request.action} • {request.class}</Text>
-                <Text className="text-gray-400 text-xs">{request.time}</Text>
-              </View>
-              {request.status === 'pending' && (
-                <View className="px-3 py-1 bg-orange-100 rounded-full">
-                  <Text className="text-orange-700 text-xs font-medium">Pending</Text>
-                </View>
-              )}
-            </View>
-          ))}
         </View>
 
         {/* Active Classes Overview */}
-        <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
-          <View className="flex-row justify-between items-center mb-4">
-            <Text className="text-gray-900 font-bold text-lg">Active Classes</Text>
-            <TouchableOpacity onPress={() => router.push('/classManagement')}>
-              <Text className="text-blue-600 text-sm font-medium">Manage</Text>
+        {classes.length > 0 ? (
+          <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-gray-900 font-bold text-lg">Active Classes</Text>
+              <TouchableOpacity onPress={() => router.push('/classManagement')}>
+                <Text className="text-blue-600 text-sm font-medium">Manage</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {classes.map((cls) => (
+              <TouchableOpacity
+                key={cls.id}
+                onPress={() => router.push('/classManagement')}
+                className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-100"
+              >
+                <View className="flex-row justify-between items-start mb-3">
+                  <View className="flex-1">
+                    <Text className="text-gray-900 font-bold">{cls.name}</Text>
+                    <Text className="text-gray-500 text-sm mt-1">{cls.studentCount} student{cls.studentCount !== 1 ? 's' : ''} enrolled</Text>
+                  </View>
+                </View>
+                <View className="flex-row items-center">
+                  <Text className="text-gray-600 text-sm">Code: {cls.code}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm items-center">
+            <BookOpen size={48} color="#d1d5db" />
+            <Text className="text-gray-900 font-bold text-lg mt-4">No Classes Yet</Text>
+            <Text className="text-gray-500 text-center mt-2 mb-4">Create your first class to start managing students and points</Text>
+            <TouchableOpacity 
+              onPress={() => router.push('/classManagement')}
+              className="bg-orange-600 px-6 py-3 rounded-xl"
+            >
+              <Text className="text-white font-semibold">Create Class</Text>
             </TouchableOpacity>
           </View>
-          
-          {activeClasses.map((cls) => (
-            <TouchableOpacity
-              key={cls.id}
-              onPress={() => router.push('/classManagement')}
-              className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-100"
-            >
-              <View className="flex-row justify-between items-start mb-3">
-                <View className="flex-1">
-                  <Text className="text-gray-900 font-bold">{cls.name}</Text>
-                  <Text className="text-gray-500 text-sm mt-1">{cls.students} students enrolled</Text>
-                </View>
-                {cls.pending > 0 && (
-                  <View className="px-2 py-1 bg-orange-100 rounded-full">
-                    <Text className="text-orange-700 text-xs font-medium">{cls.pending} pending</Text>
-                  </View>
-                )}
-              </View>
-              <View className="flex-row items-center">
-                <TrendingUp size={14} color="#10b981" />
-                <Text className="text-gray-600 text-sm ml-1">Avg: {cls.avgPoints} points</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+        )}
       </ScrollView>
 
       <BottomNav />

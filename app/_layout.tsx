@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ClassProvider } from '@/contexts/ClassContext';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import React from 'react';
 
@@ -30,9 +31,11 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <NavigationGuard>
-        <Stack screenOptions={{ headerShown: false }} />
-      </NavigationGuard>
+      <ClassProvider>
+        <NavigationGuard>
+          <Stack screenOptions={{ headerShown: false }} />
+        </NavigationGuard>
+      </ClassProvider>
     </AuthProvider>
   );
 }

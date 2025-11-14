@@ -1,8 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { UserRole } from '@/lib/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Award, Eye, EyeOff, Lock, Mail, UserCheck, Users } from 'lucide-react-native';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -11,50 +10,25 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password || !role) {
-      Alert.alert('Error', 'Please fill in all fields and select a role');
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
     try {
       setIsLoading(true);
-      await login(email, password, role);
-      // Navigation is handled by the root layout's Redirect guard.
+      await login(email, password);
+      // Navigation is handled by the root layout's guard
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Invalid credentials');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const roles = [
-    { 
-      id: 'student' as UserRole, 
-      title: 'Student', 
-      description: 'View your CredPoints and class performance', 
-      icon: UserCheck,
-      color: '#2563eb'
-    },
-    { 
-      id: 'representative' as UserRole, 
-      title: 'Representative', 
-      description: 'Submit point change requests for students', 
-      icon: Users,
-      color: '#10b981'
-    },
-    { 
-      id: 'advisor' as UserRole, 
-      title: 'Advisor', 
-      description: 'Manage classes and approve requests', 
-      icon: Award,
-      color: '#f59e0b'
-    },
-  ];
 
   return (
     <ScrollView className="flex-1 bg-gray-50">
@@ -109,42 +83,6 @@ export default function LoginScreen() {
                   <Eye color="#64748b" size={20} />
                 )}
               </TouchableOpacity>
-            </View>
-          </View>
-          
-          <View className="mb-8">
-            <Text className="text-gray-700 font-medium mb-3">Select Your Role</Text>
-            <View className="gap-3">
-              {roles.map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    className={`border-2 rounded-xl p-4 ${role === item.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
-                    onPress={() => setRole(item.id)}
-                  >
-                    <View className="flex-row items-center">
-                      <View 
-                        className="w-10 h-10 rounded-full items-center justify-center"
-                        style={{ backgroundColor: `${item.color}20` }}
-                      >
-                        <IconComponent size={20} color={item.color} />
-                      </View>
-                      <View className="ml-4 flex-1">
-                        <Text className="font-semibold text-gray-800">{item.title}</Text>
-                        <Text className="text-gray-600 text-sm">{item.description}</Text>
-                      </View>
-                      <View 
-                        className={`w-5 h-5 rounded-full border-2 ${role === item.id ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}
-                      >
-                        {role === item.id && (
-                          <View className="w-3 h-3 bg-white rounded-full m-0.5" />
-                        )}
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
             </View>
           </View>
           

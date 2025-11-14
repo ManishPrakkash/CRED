@@ -57,26 +57,31 @@ export const mockLeaderboardStudents: LeaderboardStudent[] = [
   { id: '20', name: 'Anthony Martinez', studentId: 'S10020', credPoints: 550 },
 ];
 
-// Mock login function
+// Mock login function - automatically detects role from email
 export async function mockLogin(
   email: string,
-  password: string,
-  role: UserRole
+  password: string
 ): Promise<User> {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  // Simple validation
+  // Validate password
   if (password !== 'password') {
     throw new Error('Invalid password');
   }
 
-  const user = mockUsers[role];
+  // Normalize email for comparison
   const normalizedEmail = email.trim().toLowerCase();
-  if (user.email.toLowerCase() !== normalizedEmail) {
-    throw new Error('Invalid email for selected role');
+
+  // Auto-detect role from email
+  const userEntry = Object.entries(mockUsers).find(
+    ([_, user]) => user.email.toLowerCase() === normalizedEmail
+  );
+
+  if (!userEntry) {
+    throw new Error('Invalid email. Please use a registered email address.');
   }
 
-  return user;
+  return userEntry[1];
 }
 

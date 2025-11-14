@@ -1,63 +1,17 @@
 import BottomNav from '@/components/BottomNav';
+import { useClasses } from '@/contexts/ClassContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BookOpen, Check, Copy, MoreVertical, Plus, QrCode, Search, Users, X } from 'lucide-react-native';
+import { BookOpen, Check, Copy, Plus, Search, Users, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Alert, FlatList, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-// Mock data for classes
-const mockClasses = [
-  {
-    id: '1',
-    name: 'Mathematics 101',
-    code: 'MATH101',
-    studentCount: 24,
-    joinCode: 'MATH-101-2023',
-    students: [
-      { id: '1', name: 'Alex Johnson', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900&auto=format&fit=crop&q=60' },
-      { id: '2', name: 'Maria Garcia', avatar: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=900&auto=format&fit=crop&q=60' },
-      { id: '3', name: 'James Wilson', avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=900&auto=format&fit=crop&q=60' },
-    ]
-  },
-  {
-    id: '2',
-    name: 'Physics Advanced',
-    code: 'PHYS201',
-    studentCount: 18,
-    joinCode: 'PHYS-201-2023',
-    students: [
-      { id: '4', name: 'Sarah Miller', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=900&auto=format&fit=crop&q=60' },
-      { id: '5', name: 'David Kim', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=900&auto=format&fit=crop&q=60' },
-    ]
-  },
-  {
-    id: '3',
-    name: 'Chemistry Lab',
-    code: 'CHEM150',
-    studentCount: 32,
-    joinCode: 'CHEM-150-2023',
-    students: [
-      { id: '6', name: 'Emma Thompson', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=900&auto=format&fit=crop&q=60' },
-      { id: '7', name: 'Michael Chen', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=900&auto=format&fit=crop&q=60' },
-    ]
-  }
-];
-
-// Mock pending student requests
-const mockPendingRequests = [
-  { id: '8', name: 'Robert Brown', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=900&auto=format&fit=crop&q=60', classId: '1' },
-  { id: '9', name: 'Lisa Anderson', avatar: 'https://images.unsplash.com/photo-1605993439219-9d09d2020fa5?w=900&auto=format&fit=crop&q=60', classId: '2' },
-];
-
 const ClassManagementScreen = () => {
-  const [classes, setClasses] = useState(mockClasses);
-  const [pendingRequests, setPendingRequests] = useState(mockPendingRequests);
+  const { classes, pendingRequests, createClass, approvePendingRequest, rejectPendingRequest } = useClasses();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showPendingRequests, setShowPendingRequests] = useState(false);
   const [className, setClassName] = useState('');
-  const [classCode, setClassCode] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState<any>(null);
-  const [joinCodeInput, setJoinCodeInput] = useState('');
 
   const handleCreateClass = () => {
     if (!className.trim()) {
@@ -65,20 +19,12 @@ const ClassManagementScreen = () => {
       return;
     }
 
-    const newClass = {
-      id: `${classes.length + 1}`,
-      name: className,
-      code: classCode || `CLASS-${classes.length + 1}`,
-      studentCount: 0,
-      joinCode: `${className.replace(/\s+/g, '-').toUpperCase()}-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      students: []
-    };
-
-    setClasses([newClass, ...classes]);
+    const newClass = createClass(className);
     setClassName('');
-    setClassCode('');
     setShowCreateForm(false);
-    Alert.alert('Success', `Class created successfully!\nJoin Code: ${newClass.joinCode}`);
+    Alert.alert('Success', `Class created successfully!\n\nJoin Code: ${newClass.joinCode}`, [
+      { text: 'OK' }
+    ]);
   };
 
   const copyToClipboard = (text: string) => {
@@ -86,48 +32,16 @@ const ClassManagementScreen = () => {
     Alert.alert('Copied', `${text} copied to clipboard!`);
   };
 
-  const handleJoinClass = () => {
-    if (!joinCodeInput.trim()) {
-      Alert.alert('Error', 'Please enter a join code');
-      return;
-    }
-
-    const foundClass = classes.find(cls => cls.joinCode === joinCodeInput);
-    if (foundClass) {
-      Alert.alert('Success', `You have joined ${foundClass.name}`);
-      setJoinCodeInput('');
-    } else {
-      Alert.alert('Error', 'Invalid join code. Please try again.');
+  const handleApproveStudent = (requestId: string, classId: string) => {
+    approvePendingRequest(requestId, classId);
+    const request = pendingRequests.find(r => r.id === requestId);
+    if (request) {
+      Alert.alert('Success', `${request.studentName} has been added to the class`);
     }
   };
 
-  const handleApproveStudent = (studentId: string, classId: string) => {
-    const student = pendingRequests.find(s => s.id === studentId);
-    if (!student) return;
-
-    // Add student to class
-    const updatedClasses = classes.map(cls => {
-      if (cls.id === classId) {
-        return {
-          ...cls,
-          students: [...cls.students, student],
-          studentCount: cls.studentCount + 1
-        };
-      }
-      return cls;
-    });
-
-    // Remove from pending requests
-    const updatedPending = pendingRequests.filter(s => s.id !== studentId);
-
-    setClasses(updatedClasses);
-    setPendingRequests(updatedPending);
-    Alert.alert('Success', `${student.name} has been added to the class`);
-  };
-
-  const handleRejectStudent = (studentId: string) => {
-    const updatedPending = pendingRequests.filter(s => s.id !== studentId);
-    setPendingRequests(updatedPending);
+  const handleRejectStudent = (requestId: string) => {
+    rejectPendingRequest(requestId);
     Alert.alert('Success', 'Student request rejected');
   };
 
@@ -147,12 +61,9 @@ const ClassManagementScreen = () => {
           </View>
         </View>
         
-        <View className="flex-row items-center">
-          <View className="flex-row items-center bg-orange-50 px-3 py-1 rounded-full mr-3">
-            <Users size={14} color="#f59e0b" />
-            <Text className="text-blue-700 ml-1 font-medium">{item.studentCount}</Text>
-          </View>
-          <MoreVertical size={20} color="#64748b" />
+        <View className="flex-row items-center bg-orange-50 px-3 py-1 rounded-full">
+          <Users size={14} color="#f59e0b" />
+          <Text className="text-orange-700 ml-1 font-medium">{item.studentCount}</Text>
         </View>
       </View>
       
@@ -182,30 +93,40 @@ const ClassManagementScreen = () => {
   const renderPendingRequest = ({ item }: { item: any }) => {
     const classItem = classes.find(cls => cls.id === item.classId);
     return (
-      <View className="bg-white rounded-xl p-4 mb-3 shadow-sm">
-        <View className="flex-row items-center">
-          <Image 
-            source={{ uri: item.avatar }} 
-            className="w-12 h-12 rounded-full"
-          />
+      <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
+        <View className="flex-row items-center mb-3">
+          {item.avatar && (
+            <Image 
+              source={{ uri: item.avatar }} 
+              className="w-12 h-12 rounded-full"
+            />
+          )}
+          {!item.avatar && (
+            <View className="w-12 h-12 rounded-full bg-orange-100 items-center justify-center">
+              <Users size={20} color="#f59e0b" />
+            </View>
+          )}
           <View className="ml-3 flex-1">
-            <Text className="font-bold text-gray-800">{item.name}</Text>
+            <Text className="font-bold text-gray-800">{item.studentName}</Text>
             <Text className="text-gray-500 text-sm">Request to join {classItem?.name || 'class'}</Text>
           </View>
-          <View className="flex-row">
-            <TouchableOpacity 
-              className="w-8 h-8 rounded-full bg-red-100 items-center justify-center mr-2"
-              onPress={() => handleRejectStudent(item.id)}
-            >
-              <X size={16} color="#ef4444" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              className="w-8 h-8 rounded-full bg-green-100 items-center justify-center"
-              onPress={() => handleApproveStudent(item.id, item.classId)}
-            >
-              <Check size={16} color="#10b981" />
-            </TouchableOpacity>
-          </View>
+        </View>
+        
+        <View className="flex-row gap-2 mt-2">
+          <TouchableOpacity 
+            className="flex-1 bg-red-50 border border-red-200 py-2.5 rounded-lg flex-row items-center justify-center"
+            onPress={() => handleRejectStudent(item.id)}
+          >
+            <X size={18} color="#ef4444" />
+            <Text className="text-red-700 font-medium ml-1">Reject</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            className="flex-1 bg-green-50 border border-green-200 py-2.5 rounded-lg flex-row items-center justify-center"
+            onPress={() => handleApproveStudent(item.id, item.classId)}
+          >
+            <Check size={18} color="#10b981" />
+            <Text className="text-green-700 font-medium ml-1">Approve</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -230,23 +151,13 @@ const ClassManagementScreen = () => {
           <View className="bg-white rounded-xl p-5 mb-6 shadow-sm">
             <Text className="text-lg font-bold text-gray-800 mb-4">Create New Class</Text>
             
-            <View className="mb-4">
+            <View className="mb-6">
               <Text className="text-gray-700 mb-2">Class Name</Text>
               <TextInput
                 className="border border-gray-300 rounded-lg p-3"
-                placeholder="Enter class name"
+                placeholder="Your Class Name"
                 value={className}
                 onChangeText={setClassName}
-              />
-            </View>
-            
-            <View className="mb-4">
-              <Text className="text-gray-700 mb-2">Class Code (Optional)</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3"
-                placeholder="Enter class code"
-                value={classCode}
-                onChangeText={setClassCode}
               />
             </View>
             
@@ -277,27 +188,6 @@ const ClassManagementScreen = () => {
             <Text className="ml-3 text-gray-800 font-bold">Create New Class</Text>
           </TouchableOpacity>
         )}
-        
-        {/* Join Class Section */}
-        <View className="bg-white rounded-xl p-5 mb-6 shadow-sm">
-          <Text className="text-lg font-bold text-gray-800 mb-3">Join a Class</Text>
-          <Text className="text-gray-600 mb-4">Enter a join code to join a class</Text>
-          
-          <View className="flex-row items-center">
-            <TextInput
-              className="flex-1 border border-gray-300 rounded-lg p-3 mr-2"
-              placeholder="Enter join code"
-              value={joinCodeInput}
-              onChangeText={setJoinCodeInput}
-            />
-            <TouchableOpacity 
-              className="bg-orange-600 py-3 px-5 rounded-lg"
-              onPress={handleJoinClass}
-            >
-              <Text className="text-white font-bold">Join</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
         
         {/* Pending Requests */}
         {pendingRequests.length > 0 && (
@@ -337,13 +227,23 @@ const ClassManagementScreen = () => {
           
           <Text className="text-lg font-bold text-gray-800 mb-3">Your Classes</Text>
           
-          <FlatList
-            data={classes}
-            keyExtractor={(item) => item.id}
-            renderItem={renderClassItem}
-            scrollEnabled={false}
-            showsVerticalScrollIndicator={false}
-          />
+          {classes.length > 0 ? (
+            <FlatList
+              data={classes}
+              keyExtractor={(item) => item.id}
+              renderItem={renderClassItem}
+              scrollEnabled={false}
+              showsVerticalScrollIndicator={false}
+            />
+          ) : (
+            <View className="bg-white rounded-xl p-8 items-center">
+              <BookOpen size={48} color="#d1d5db" />
+              <Text className="text-gray-900 font-bold text-lg mt-4">No Classes Yet</Text>
+              <Text className="text-gray-500 text-center mt-2">
+                Create your first class to start managing students and tracking their CredPoints
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
       
@@ -363,8 +263,7 @@ const ClassManagementScreen = () => {
             
             <View className="p-5">
               <View className="flex-row items-center bg-gray-100 rounded-lg p-3 mb-4">
-                <QrCode size={20} color="#64748b" />
-                <Text className="ml-2 text-gray-700 font-medium">Join Code: {selectedClass.joinCode}</Text>
+                <Text className="text-gray-700 font-medium">Join Code: {selectedClass.joinCode}</Text>
                 <TouchableOpacity 
                   className="ml-auto"
                   onPress={() => copyToClipboard(selectedClass.joinCode)}

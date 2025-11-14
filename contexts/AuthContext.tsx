@@ -1,10 +1,10 @@
-import type { User, UserRole } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { mockLogin } from '@/services/mockData';
 import React, { createContext, ReactNode, useContext, useState } from 'react';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role: UserRole) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -15,10 +15,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const login = async (email: string, password: string, role: UserRole) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const userData = await mockLogin(email, password, role);
+      const userData = await mockLogin(email, password);
       setUser(userData);
     } catch (error) {
       throw error;
