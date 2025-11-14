@@ -39,9 +39,6 @@ export default function AdvisorDashboard() {
             <Text className="text-white text-sm opacity-90">Advisor Dashboard</Text>
             <Text className="text-white text-2xl font-bold mt-1">{user?.name}</Text>
           </View>
-          <TouchableOpacity className="p-2 bg-white/20 rounded-full">
-            <Bell size={24} color="white" />
-          </TouchableOpacity>
         </View>
       </LinearGradient>
 
