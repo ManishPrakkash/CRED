@@ -1,17 +1,20 @@
 import BottomNav from '@/components/BottomNav';
+import DeleteClassModal from '@/components/DeleteClassModal';
 import { useClasses } from '@/contexts/ClassContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BookOpen, Check, Copy, Plus, Search, Users, X } from 'lucide-react-native';
+import { BookOpen, Check, Copy, Plus, Search, Trash2, Users, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Alert, FlatList, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const ClassManagementScreen = () => {
-  const { classes, pendingRequests, createClass, approvePendingRequest, rejectPendingRequest } = useClasses();
+  const { classes, pendingRequests, createClass, approvePendingRequest, rejectPendingRequest, deleteClass } = useClasses();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showPendingRequests, setShowPendingRequests] = useState(false);
   const [className, setClassName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState<any>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [classToDelete, setClassToDelete] = useState<any>(null);
 
   const handleCreateClass = () => {
     if (!className.trim()) {
@@ -45,19 +48,54 @@ const ClassManagementScreen = () => {
     Alert.alert('Success', 'Student request rejected');
   };
 
+  const handleDeleteClass = (classItem: any) => {
+    Alert.alert(
+      'Delete Class',
+      `Are you sure you want to delete "${classItem.name}"?\n\nThis will permanently remove:\n• ${classItem.studentCount} student${classItem.studentCount !== 1 ? 's' : ''} from this class\n• All class data and history\n\nThis action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            setClassToDelete(classItem);
+            setShowDeleteModal(true);
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const confirmDelete = () => {
+    if (classToDelete) {
+      deleteClass(classToDelete.id);
+      setShowDeleteModal(false);
+      setClassToDelete(null);
+      Alert.alert('Deleted', `"${classToDelete.name}" has been permanently deleted`);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setClassToDelete(null);
+  };
+
   const renderClassItem = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100"
-      onPress={() => setSelectedClass(item)}
-    >
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center">
+    <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
+      <TouchableOpacity 
+        onPress={() => setSelectedClass(item)}
+        className="flex-row items-center justify-between mb-3"
+      >
+        <View className="flex-row items-center flex-1">
           <View className="w-12 h-12 rounded-xl bg-orange-100 items-center justify-center">
             <BookOpen size={24} color="#f59e0b" />
           </View>
-          <View className="ml-3">
+          <View className="ml-3 flex-1">
             <Text className="font-bold text-gray-800 text-lg">{item.name}</Text>
-            <Text className="text-gray-500">{item.code}</Text>
           </View>
         </View>
         
@@ -65,19 +103,28 @@ const ClassManagementScreen = () => {
           <Users size={14} color="#f59e0b" />
           <Text className="text-orange-700 ml-1 font-medium">{item.studentCount}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
       
-      <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100">
-        <Text className="text-gray-500 mr-2">Join Code:</Text>
-        <Text className="font-mono text-gray-700">{item.joinCode}</Text>
-        <TouchableOpacity 
-          className="ml-2"
-          onPress={() => copyToClipboard(item.joinCode)}
+      <View className="flex-row items-center justify-between pt-3 border-t border-gray-100">
+        <View className="flex-row items-center flex-1">
+          <Text className="text-gray-500 mr-2">Join Code:</Text>
+          <Text className="font-mono text-gray-700">{item.joinCode}</Text>
+          <TouchableOpacity 
+            className="ml-2"
+            onPress={() => copyToClipboard(item.joinCode)}
+          >
+            <Copy size={16} color="#64748b" />
+          </TouchableOpacity>
+        </View>
+        
+        <TouchableOpacity
+          onPress={() => handleDeleteClass(item)}
+          className="bg-red-50 p-2 rounded-lg ml-3"
         >
-          <Copy size={16} color="#64748b" />
+          <Trash2 size={18} color="#ef4444" />
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   const renderStudentItem = ({ item }: { item: any }) => (
@@ -305,6 +352,14 @@ const ClassManagementScreen = () => {
           </View>
         </View>
       )}
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteClassModal
+        visible={showDeleteModal}
+        className={classToDelete?.name || ''}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
       
       <BottomNav />
     </View>
