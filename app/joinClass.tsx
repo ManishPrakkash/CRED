@@ -37,9 +37,7 @@ export default function JoinClassScreen() {
 
   const handleSelectClass = (classId: string) => {
     switchClass(classId);
-    Alert.alert('Class Selected', 'You can now access the dashboard.', [
-      { text: 'OK', onPress: () => router.replace('/') }
-    ]);
+    router.replace('/');
   };
 
   const handleDeleteClass = (classId: string, className: string) => {
