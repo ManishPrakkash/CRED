@@ -1,5 +1,6 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationService } from '@/services/notificationService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, Plus, Search, User, Paperclip, Image as ImageIcon, X, File, Eye } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -8,6 +9,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import type { Attachment } from '@/lib/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const PENDING_REQUESTS_KEY = '@cred_pending_requests_count';
+const CORRECTION_REQUESTS_KEY = '@cred_correction_requests_count';
 
 export default function RepresentativeRequest() {
   const { user } = useAuth();
@@ -235,11 +240,60 @@ export default function RepresentativeRequest() {
     return matchesSearch && matchesFilter && matchesDate;
   });
 
-  const handleSubmitRequest = () => {
+  const handleSubmitRequest = async () => {
     if (!workDescription || !requestedPoints) {
       Alert.alert('Missing Information', 'Please provide work description and requested points');
       return;
     }
+
+    // Check if user has any correction notifications
+    const hasCorrectionNotification = user?.notifications?.some(
+      n => n.type === 'request_correction' && !n.read
+    );
+
+    // Send notification to advisor (HOD)
+    const advisorId = '3'; // Advisor user ID from mockData
+    const requestId = `req-${Date.now()}`;
+    
+    const requestData = {
+      id: requestId,
+      staffName: user?.name,
+      staffId: user?.id,
+      userId: user?.id,
+      workDescription,
+      points: parseInt(requestedPoints),
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString(),
+      status: 'pending',
+      attachments: attachments.length,
+    };
+    
+    await NotificationService.notifyAdvisorOfRequest(
+      advisorId,
+      user?.id || '',
+      user?.name || '',
+      requestId,
+      workDescription,
+      requestData
+    );
+
+    // Update counts based on whether this is a new request or correction resubmission
+    try {
+      if (hasCorrectionNotification) {
+        // Decrement correction count (resubmitting a corrected request)
+        const currentCorrectionCount = await AsyncStorage.getItem(CORRECTION_REQUESTS_KEY);
+        const newCorrectionCount = Math.max(0, (currentCorrectionCount ? parseInt(currentCorrectionCount) : 0) - 1);
+        await AsyncStorage.setItem(CORRECTION_REQUESTS_KEY, newCorrectionCount.toString());
+      }
+      
+      // Always increment pending count for new submission to advisor
+      const currentPendingCount = await AsyncStorage.getItem(PENDING_REQUESTS_KEY);
+      const newPendingCount = (currentPendingCount ? parseInt(currentPendingCount) : 0) + 1;
+      await AsyncStorage.setItem(PENDING_REQUESTS_KEY, newPendingCount.toString());
+    } catch (error) {
+      console.error('Failed to update request counts:', error);
+    }
+
     Alert.alert(
       'Success',
       `Work request submitted: ${requestedPoints} points${attachments.length > 0 ? ` with ${attachments.length} attachment(s)` : ''}\nYour request will be reviewed by the HOD.`
