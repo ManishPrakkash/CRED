@@ -1,5 +1,6 @@
-import type { User, JoinedClass } from '@/lib/types';
+import type { User, JoinedClass, Notification } from '@/lib/types';
 import { mockLogin } from '@/services/mockData';
+import { NotificationService } from '@/services/notificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useState, useEffect } from 'react';
 
@@ -12,6 +13,10 @@ interface AuthContextType {
   switchClass: (classId: string) => void;
   deleteClass: (classId: string) => void;
   hasJoinedClasses: boolean;
+  addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void;
+  markNotificationAsRead: (notificationId: string) => void;
+  markNotificationAsReadByRequestId: (requestId: string) => void;
+  unreadCount: number;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -86,6 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userData.currentClassId = null; // Force them to select a class
       }
       
+      // Load notifications from NotificationService
+      const notifications = await NotificationService.getNotifications(userData.id);
+      userData.notifications = notifications;
+      
       setUser(userData);
     } catch (error) {
       throw error;
@@ -158,10 +167,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updatedUser);
   };
 
+  const addNotification = (notification: Omit<Notification, 'id' | 'createdAt'>) => {
+    if (!user) return;
+
+    const newNotification: Notification = {
+      ...notification,
+      id: `notif-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    setUser({
+      ...user,
+      notifications: [newNotification, ...(user.notifications || [])],
+    });
+  };
+
+  const markNotificationAsRead = async (notificationId: string) => {
+    if (!user) return;
+
+    const updatedNotifications = user.notifications?.map(n =>
+      n.id === notificationId ? { ...n, read: true } : n
+    ) || [];
+
+    setUser({
+      ...user,
+      notifications: updatedNotifications,
+    });
+
+    // Update in AsyncStorage
+    await NotificationService.markAsRead(user.id, notificationId);
+  };
+
+  const markNotificationAsReadByRequestId = async (requestId: string) => {
+    if (!user) return;
+
+    const updatedNotifications = user.notifications?.map(n =>
+      n.requestId === requestId ? { ...n, read: true } : n
+    ) || [];
+
+    setUser({
+      ...user,
+      notifications: updatedNotifications,
+    });
+
+    // Update in AsyncStorage
+    await NotificationService.markAsReadByRequestId(user.id, requestId);
+  };
+
+  const unreadCount = user?.notifications?.filter(n => !n.read).length || 0;
+
   const hasJoinedClasses = !!(user?.joinedClasses && user.joinedClasses.length > 0);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, joinClass, switchClass, deleteClass, hasJoinedClasses }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      logout, 
+      isLoading, 
+      joinClass, 
+      switchClass, 
+      deleteClass, 
+      hasJoinedClasses,
+      addNotification,
+      markNotificationAsRead,
+      markNotificationAsReadByRequestId,
+      unreadCount
+    }}>
       {children}
     </AuthContext.Provider>
   );
