@@ -2,13 +2,10 @@ import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationService } from '@/services/notificationService';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Calendar, Plus, Search, User, Paperclip, Image as ImageIcon, X, File, Eye } from 'lucide-react-native';
+import { Calendar, Plus, Search, User } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { FlatList, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View, Image, Alert } from 'react-native';
+import { FlatList, Platform, ScrollView, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
-import type { Attachment } from '@/lib/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PENDING_REQUESTS_KEY = '@cred_pending_requests_count';
@@ -23,8 +20,6 @@ export default function RepresentativeRequest() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   
   const currentClass = user?.joinedClasses?.find(c => c.id === user?.currentClassId);
 
@@ -38,10 +33,6 @@ export default function RepresentativeRequest() {
       time: '10:30 AM',
       status: 'pending',
       reviewedBy: null,
-      attachments: [
-        { id: '1', name: 'lab_before.jpg', uri: 'https://picsum.photos/400/300', type: 'image' as const, size: 245000 },
-        { id: '2', name: 'lab_after.jpg', uri: 'https://picsum.photos/400/301', type: 'image' as const, size: 312000 },
-      ],
     },
     {
       id: '2',
@@ -62,9 +53,6 @@ export default function RepresentativeRequest() {
       status: 'approved',
       reviewedBy: 'Dr. HOD',
       reviewDate: '2023-06-13',
-      attachments: [
-        { id: '3', name: 'workshop_attendance.jpg', uri: 'https://picsum.photos/400/302', type: 'image' as const, size: 287000 },
-      ],
     },
     {
       id: '4',
@@ -85,10 +73,6 @@ export default function RepresentativeRequest() {
       time: '03:30 PM',
       status: 'pending',
       reviewedBy: null,
-      attachments: [
-        { id: '4', name: 'mentoring_report.pdf', uri: '', type: 'document' as const, size: 456000, mimeType: 'application/pdf' },
-        { id: '5', name: 'session_photo.png', uri: 'https://picsum.photos/400/303', type: 'image' as const, size: 523000 },
-      ],
     },
   ];
 
@@ -124,102 +108,6 @@ export default function RepresentativeRequest() {
   const formatDateDisplay = (date: Date | null) => {
     if (!date) return 'Select Date';
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  const handlePickDocument = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
-        copyToCacheDirectory: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const file = result.assets[0];
-        const newAttachment: Attachment = {
-          id: Date.now().toString(),
-          name: file.name,
-          uri: file.uri,
-          type: 'document',
-          size: file.size,
-          mimeType: file.mimeType,
-        };
-        setAttachments([...attachments, newAttachment]);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to pick document');
-    }
-  };
-
-  const handlePickImage = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (permissionResult.granted === false) {
-        Alert.alert('Permission Required', 'Please allow access to your photo library');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const image = result.assets[0];
-        const newAttachment: Attachment = {
-          id: Date.now().toString(),
-          name: `image_${Date.now()}.jpg`,
-          uri: image.uri,
-          type: 'image',
-          size: image.fileSize,
-        };
-        setAttachments([...attachments, newAttachment]);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to pick image');
-    }
-  };
-
-  const handleTakePhoto = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      
-      if (permissionResult.granted === false) {
-        Alert.alert('Permission Required', 'Please allow access to your camera');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const photo = result.assets[0];
-        const newAttachment: Attachment = {
-          id: Date.now().toString(),
-          name: `photo_${Date.now()}.jpg`,
-          uri: photo.uri,
-          type: 'image',
-          size: photo.fileSize,
-        };
-        setAttachments([...attachments, newAttachment]);
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to take photo');
-    }
-  };
-
-  const removeAttachment = (id: string) => {
-    setAttachments(attachments.filter(att => att.id !== id));
-  };
-
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return '';
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   const filteredRequests = allRequests.filter(req => {
@@ -265,7 +153,6 @@ export default function RepresentativeRequest() {
       date: new Date().toLocaleDateString(),
       time: new Date().toLocaleTimeString(),
       status: 'pending',
-      attachments: attachments.length,
     };
     
     await NotificationService.notifyAdvisorOfRequest(
@@ -296,11 +183,10 @@ export default function RepresentativeRequest() {
 
     Alert.alert(
       'Success',
-      `Work request submitted: ${requestedPoints} points${attachments.length > 0 ? ` with ${attachments.length} attachment(s)` : ''}\nYour request will be reviewed by the HOD.`
+      `Work request submitted: ${requestedPoints} points\nYour request will be reviewed by the HOD.`
     );
     setWorkDescription('');
     setRequestedPoints('');
-    setAttachments([]);
     setShowSubmitForm(false);
   };
 
@@ -340,43 +226,6 @@ export default function RepresentativeRequest() {
             {item.points} CredPoints
           </Text>
         </View>
-        
-        {/* Attachments Preview */}
-        {item.attachments && item.attachments.length > 0 && (
-          <View className="mb-3">
-            <Text className="text-gray-600 text-xs font-medium mb-2">
-              <Paperclip size={12} color="#64748b" /> {item.attachments.length} Attachment(s)
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View className="flex-row gap-2">
-                {item.attachments.map((attachment: Attachment) => (
-                  <TouchableOpacity
-                    key={attachment.id}
-                    onPress={() => attachment.type === 'image' && attachment.uri ? setPreviewAttachment(attachment) : null}
-                    className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden"
-                    style={{ width: 100 }}
-                  >
-                    {attachment.type === 'image' && attachment.uri ? (
-                      <Image source={{ uri: attachment.uri }} className="w-full h-20" resizeMode="cover" />
-                    ) : (
-                      <View className="w-full h-20 items-center justify-center">
-                        <File size={24} color="#64748b" />
-                      </View>
-                    )}
-                    <View className="p-2">
-                      <Text className="text-gray-700 text-xs font-medium" numberOfLines={1}>
-                        {attachment.name}
-                      </Text>
-                      <Text className="text-gray-500 text-xs">
-                        {formatFileSize(attachment.size)}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-        )}
         
         <View className="pt-3 border-t border-gray-100">
           {item.reviewedBy && (
@@ -482,89 +331,6 @@ export default function RepresentativeRequest() {
                 value={requestedPoints}
                 onChangeText={setRequestedPoints}
               />
-            </View>
-
-            {/* Attachments Section */}
-            <View className="mb-4">
-              <Text className="text-gray-700 font-medium mb-2">
-                Evidence/Attachments (Recommended)
-              </Text>
-              <Text className="text-gray-500 text-xs mb-3">
-                Upload photos, documents, or certificates as proof of work
-              </Text>
-              
-              {/* Attachment Buttons */}
-              <View className="flex-row gap-2 mb-3">
-                <TouchableOpacity
-                  onPress={handlePickImage}
-                  className="flex-1 bg-blue-50 border border-blue-200 rounded-lg py-3 items-center"
-                >
-                  <ImageIcon size={20} color="#3b82f6" />
-                  <Text className="text-blue-600 text-xs mt-1 font-medium">Gallery</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  onPress={handleTakePhoto}
-                  className="flex-1 bg-purple-50 border border-purple-200 rounded-lg py-3 items-center"
-                >
-                  <ImageIcon size={20} color="#9333ea" />
-                  <Text className="text-purple-600 text-xs mt-1 font-medium">Camera</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  onPress={handlePickDocument}
-                  className="flex-1 bg-orange-50 border border-orange-200 rounded-lg py-3 items-center"
-                >
-                  <Paperclip size={20} color="#f97316" />
-                  <Text className="text-orange-600 text-xs mt-1 font-medium">Document</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Attached Files List */}
-              {attachments.length > 0 && (
-                <View className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                  <Text className="text-gray-600 text-xs font-medium mb-2">
-                    {attachments.length} file(s) attached
-                  </Text>
-                  {attachments.map((attachment) => (
-                    <View key={attachment.id} className="flex-row items-center bg-white rounded-lg p-2 mb-2 border border-gray-200">
-                      <View className="w-10 h-10 rounded bg-gray-100 items-center justify-center mr-2">
-                        {attachment.type === 'image' ? (
-                          attachment.uri ? (
-                            <Image source={{ uri: attachment.uri }} className="w-10 h-10 rounded" />
-                          ) : (
-                            <ImageIcon size={20} color="#64748b" />
-                          )
-                        ) : (
-                          <File size={20} color="#64748b" />
-                        )}
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-gray-800 text-sm font-medium" numberOfLines={1}>
-                          {attachment.name}
-                        </Text>
-                        <Text className="text-gray-500 text-xs">
-                          {formatFileSize(attachment.size)}
-                        </Text>
-                      </View>
-                      {attachment.type === 'image' && attachment.uri && (
-                        <TouchableOpacity
-                          onPress={() => setPreviewAttachment(attachment)}
-                          className="mr-2 p-1"
-                        >
-                          <Eye size={18} color="#10b981" />
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity
-                        onPress={() => removeAttachment(attachment.id)}
-                        className="p-1"
-                      >
-                        <X size={18} color="#ef4444" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              )}
             </View>
             
             <View className="flex-row gap-3">
@@ -706,37 +472,6 @@ export default function RepresentativeRequest() {
           />
         </View>
       </ScrollView>
-
-      {/* Image Preview Modal */}
-      <Modal
-        visible={previewAttachment !== null}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setPreviewAttachment(null)}
-      >
-        <View className="flex-1 bg-black/90">
-          <TouchableOpacity
-            onPress={() => setPreviewAttachment(null)}
-            className="absolute top-12 right-6 z-10 w-10 h-10 rounded-full bg-white/20 items-center justify-center"
-          >
-            <X size={24} color="#ffffff" />
-          </TouchableOpacity>
-          
-          {previewAttachment && previewAttachment.type === 'image' && previewAttachment.uri && (
-            <View className="flex-1 items-center justify-center p-6">
-              <Image 
-                source={{ uri: previewAttachment.uri }} 
-                className="w-full h-full"
-                resizeMode="contain"
-              />
-              <View className="absolute bottom-8 left-6 right-6 bg-black/60 rounded-lg p-4">
-                <Text className="text-white font-bold mb-1">{previewAttachment.name}</Text>
-                <Text className="text-white/80 text-sm">{formatFileSize(previewAttachment.size)}</Text>
-              </View>
-            </View>
-          )}
-        </View>
-      </Modal>
 
       <BottomNav />
     </View>
