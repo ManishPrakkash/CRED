@@ -42,7 +42,7 @@ export default function BottomNav() {
   // role-aware visibility
   const canSeeRequests = user?.role === 'staff' || user?.role === 'advisor';
   const canSeeClasses = user?.role === 'advisor';
-  const canSeeLeaderboard = user?.role !== 'staff'; // Staff don't see leaderboard
+  const canSeeLeaderboard = true; // All roles can see leaderboard
 
   const totalRequests = pendingCount + correctionCount;
 
