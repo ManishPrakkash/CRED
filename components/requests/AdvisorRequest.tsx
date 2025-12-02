@@ -160,12 +160,6 @@ export default function AdvisorRequest() {
           <Text className="text-gray-800">{item.workDescription}</Text>
         </View>
         
-        {item.attachments > 0 && (
-          <View className="flex-row items-center mb-3">
-            <Text className="text-gray-500 text-sm">📎 {item.attachments} attachment{item.attachments > 1 ? 's' : ''}</Text>
-          </View>
-        )}
-        
         <View className="mt-3 pt-3 border-t border-gray-100">
           <View className="mb-3">
             <Text className="text-gray-500 text-xs">Submitted by: {item.staffName}</Text>
