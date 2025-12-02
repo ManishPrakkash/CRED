@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { NotificationService } from '@/services/notificationService';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, User, FileText, Calendar, Clock, Paperclip, CheckCircle, XCircle, AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, User, FileText, Calendar, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View, Alert, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
