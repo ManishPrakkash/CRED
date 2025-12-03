@@ -1,5 +1,5 @@
 import type { User, JoinedClass, Notification } from '@/lib/types';
-import { mockLogin } from '@/services/mockData';
+import { loginWithSupabase } from '@/services/supabaseAuth';
 import { NotificationService } from '@/services/notificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useState, useEffect } from 'react';
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const userData = await mockLogin(email, password);
+      const userData = await loginWithSupabase(email, password);
       
       // Load persistent data (joined classes) for this user
       const persistentDataKey = `${USER_DATA_PREFIX}${userData.id}`;
