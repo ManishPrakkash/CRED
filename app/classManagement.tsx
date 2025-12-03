@@ -1,7 +1,7 @@
 import BottomNav from '@/components/BottomNav';
 import DeleteClassModal from '@/components/DeleteClassModal';
 import { useClasses } from '@/contexts/ClassContext';
-import { mockStudents } from '@/services/mockData';
+// import { mockStudents } from '@/services/mockData';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BookOpen, Check, Copy, Plus, Search, Trash2, Users, X } from 'lucide-react-native';
@@ -28,9 +28,9 @@ const ClassManagementScreen = () => {
     const newClass = createClass(className);
     
     // Automatically add 10 students to the new class
-    mockStudents.slice(0, 10).forEach(student => {
-      addStudentToClass(newClass.id, student);
-    });
+    // mockStudents.slice(0, 10).forEach(student => {
+    //   addStudentToClass(newClass.id, student);
+    // });
     
     setClassName('');
     setShowCreateForm(false);
