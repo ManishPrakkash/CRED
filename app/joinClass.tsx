@@ -1,17 +1,19 @@
 import DeleteClassModal from '@/components/DeleteClassModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { validateAndCleanJoinedClasses } from '@/services/supabaseClasses';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { BookOpen, CheckCircle, Plus, Trash2 } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function JoinClassScreen() {
   const router = useRouter();
-  const { user, joinClass, switchClass, deleteClass } = useAuth();
+  const { user, joinClass, switchClass, deleteClass, refreshJoinedClasses } = useAuth();
   const [joinCode, setJoinCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [classToDelete, setClassToDelete] = useState<{ id: string; name: string } | null>(null);
+
 
   const handleJoinClass = async () => {
     if (!joinCode.trim()) {
@@ -25,17 +27,28 @@ export default function JoinClassScreen() {
       setJoinCode('');
       Alert.alert('Success', 'Class joined successfully! It has been added to your class list below.');
     } catch (error: any) {
-      if (error.message.includes('already joined')) {
-        Alert.alert('Already Joined', 'You have already joined this class. It has been set as your active class.');
-      } else {
-        Alert.alert('Error', error.message || 'Failed to join class');
-      }
+      Alert.alert('Error', error.message || 'Failed to join class');
     } finally {
       setIsJoining(false);
     }
   };
 
-  const handleSelectClass = (classId: string) => {
+  const handleSelectClass = async (classId: string) => {
+    // Check if class still exists in database
+    const { validClasses } = await validateAndCleanJoinedClasses(user!.id);
+    const classStillExists = validClasses.some((jc) => jc.class_id === classId);
+    
+    if (!classStillExists) {
+      Alert.alert(
+        'Class Not Available',
+        'This class has been deleted by the advisor. Please contact your advisor for assistance.',
+        [{ text: 'OK' }]
+      );
+      // Refresh the list to remove deleted classes from UI
+      await refreshJoinedClasses();
+      return;
+    }
+    
     switchClass(classId);
     router.replace('/');
   };
@@ -129,33 +142,33 @@ export default function JoinClassScreen() {
             
             {user.joinedClasses.map((joinedClass, index) => (
               <View
-                key={joinedClass.id}
+                key={joinedClass.class_id}
                 className={`bg-white rounded-xl p-4 mb-3 shadow-sm border ${
-                  user.currentClassId === joinedClass.id ? 'border-orange-500 border-2' : 'border-gray-200'
+                  user.currentClassId === joinedClass.class_id ? 'border-orange-500 border-2' : 'border-gray-200'
                 }`}
               >
                 <TouchableOpacity
-                  onPress={() => handleSelectClass(joinedClass.id)}
+                  onPress={() => handleSelectClass(joinedClass.class_id)}
                   activeOpacity={0.7}
                 >
                   <View className="flex-row items-center">
                     <View className={`w-11 h-11 rounded-lg items-center justify-center ${
-                      user.currentClassId === joinedClass.id ? 'bg-orange-100' : 'bg-gray-100'
+                      user.currentClassId === joinedClass.class_id ? 'bg-orange-100' : 'bg-gray-100'
                     }`}>
-                      <BookOpen size={20} color={user.currentClassId === joinedClass.id ? '#f59e0b' : '#6b7280'} />
+                      <BookOpen size={20} color={user.currentClassId === joinedClass.class_id ? '#f59e0b' : '#6b7280'} />
                     </View>
                   <View className="ml-3 flex-1">
                     <View className="flex-row items-center mb-1">
-                      <Text className="text-gray-900 font-semibold text-base">{joinedClass.name}</Text>
-                      {user.currentClassId === joinedClass.id && (
+                      <Text className="text-gray-900 font-semibold text-base">{joinedClass.class_name}</Text>
+                      {user.currentClassId === joinedClass.class_id && (
                         <View className="ml-2 bg-green-100 px-2 py-0.5 rounded">
                           <Text className="text-green-700 font-semibold text-xs">Active</Text>
                         </View>
                       )}
                     </View>
-                    <Text className="text-gray-500 text-sm">Code: {joinedClass.joinCode}</Text>
+                    <Text className="text-gray-500 text-sm">Code: {joinedClass.class_code}</Text>
                     <Text className="text-gray-400 text-xs mt-1">
-                      Joined {new Date(joinedClass.joinedAt).toLocaleDateString('en-US', { 
+                      Joined {new Date(joinedClass.joined_at).toLocaleDateString('en-US', { 
                         month: 'short', 
                         day: 'numeric', 
                         year: 'numeric' 
@@ -167,7 +180,7 @@ export default function JoinClassScreen() {
                 
                 {/* Delete Button */}
                 <TouchableOpacity
-                  onPress={() => handleDeleteClass(joinedClass.id, joinedClass.name)}
+                  onPress={() => handleDeleteClass(joinedClass.class_id, joinedClass.class_name)}
                   className="absolute top-3 right-3 w-9 h-9 rounded-lg bg-red-50 items-center justify-center border border-red-200"
                   activeOpacity={0.7}
                 >
