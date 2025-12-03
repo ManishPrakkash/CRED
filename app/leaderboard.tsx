@@ -11,40 +11,44 @@ export default function LeaderboardScreen() {
   const { classes } = useClasses();
   const [activeTab, setActiveTab] = useState<'green' | 'red'>('green');
 
+  // TODO: Replace with staff leaderboard based on CRED points earned by staff members
   // Get all students from all classes
-  const allStudents = useMemo(() => {
-    const studentMap = new Map();
-    
-    classes.forEach(cls => {
-      cls.students.forEach(student => {
-        // Use student ID to avoid duplicates if student is in multiple classes
-        if (!studentMap.has(student.id)) {
-          studentMap.set(student.id, {
-            id: student.id,
-            name: student.name,
-            studentId: student.email.split('@')[0].toUpperCase(), // Generate student ID from email
-            credPoints: student.credPoints || 0,
-            avatar: student.avatar
-          });
-        } else {
-          // If student exists in multiple classes, sum their points
-          const existing = studentMap.get(student.id);
-          existing.credPoints += (student.credPoints || 0);
-        }
-      });
-    });
-    
-    return Array.from(studentMap.values());
-  }, [classes]);
+  // const allStudents = useMemo(() => {
+  //   const studentMap = new Map();
+  //   
+  //   classes.forEach(cls => {
+  //     cls.students.forEach(student => {
+  //       // Use student ID to avoid duplicates if student is in multiple classes
+  //       if (!studentMap.has(student.id)) {
+  //         studentMap.set(student.id, {
+  //           id: student.id,
+  //           name: student.name,
+  //           studentId: student.email.split('@')[0].toUpperCase(), // Generate student ID from email
+  //           credPoints: student.credPoints || 0,
+  //           avatar: student.avatar
+  //         });
+  //       } else {
+  //         // If student exists in multiple classes, sum their points
+  //         const existing = studentMap.get(student.id);
+  //         existing.credPoints += (student.credPoints || 0);
+  //       }
+  //     });
+  //   });
+  //   
+  //   return Array.from(studentMap.values());
+  // }, [classes]);
+  const allStudents: any[] = []; // Placeholder - will be replaced with staff data
 
   // Separate students into green (>=1500) and red (<1500) leaderboards
-  const greenLeaderboard = allStudents
-    .filter(s => s.credPoints >= 1500)
-    .sort((a, b) => b.credPoints - a.credPoints);
+  // const greenLeaderboard = allStudents
+  //   .filter(s => s.credPoints >= 1500)
+  //   .sort((a, b) => b.credPoints - a.credPoints);
+  const greenLeaderboard: any[] = [];
 
-  const redLeaderboard = allStudents
-    .filter(s => s.credPoints < 1500)
-    .sort((a, b) => a.credPoints - b.credPoints); // Ascending for red leaderboard (worst performers first)
+  // const redLeaderboard = allStudents
+  //   .filter(s => s.credPoints < 1500)
+  //   .sort((a, b) => a.credPoints - b.credPoints); // Ascending for red leaderboard (worst performers first)
+  const redLeaderboard: any[] = [];
 
   if (isLoading) {
     return (
@@ -76,13 +80,14 @@ export default function LeaderboardScreen() {
     }
   };
 
-  const renderLeaderboardItem = (student: any, index: number, isGreen: boolean) => {
+  // TODO: Update to render staff members instead of students
+  const renderLeaderboardItem = (staff: any, index: number, isGreen: boolean) => {
     const rank = index + 1;
     const isTopThree = rank <= 3;
     
     return (
       <View
-        key={student.id}
+        key={staff.id}
         className={`flex-row items-center p-4 mb-3 rounded-xl shadow-sm ${
           isTopThree
             ? isGreen
@@ -119,21 +124,21 @@ export default function LeaderboardScreen() {
           )}
         </View>
 
-        {/* Student Info */}
+        {/* Staff Info */}
         <View className="flex-1">
           <Text className={`font-bold text-base ${
             isTopThree ? 'text-gray-900' : 'text-gray-800'
           }`}>
-            {student.name}
+            {staff.name}
           </Text>
-          <Text className="text-gray-500 text-sm mt-0.5">ID: {student.studentId}</Text>
+          <Text className="text-gray-500 text-sm mt-0.5">ID: {staff.studentId}</Text>
         </View>
 
         {/* CRED Points */}
         <View className={`px-4 py-2 rounded-full ${
           isGreen ? 'bg-green-600' : 'bg-red-600'
         }`}>
-          <Text className="text-white font-bold text-base">{student.credPoints}</Text>
+          <Text className="text-white font-bold text-base">{staff.credPoints}</Text>
           <Text className="text-white/80 text-xs text-center">points</Text>
         </View>
       </View>
@@ -191,9 +196,9 @@ export default function LeaderboardScreen() {
         {allStudents.length === 0 ? (
           <View className="bg-white rounded-xl p-8 items-center mt-8">
             <Trophy size={64} color="#cbd5e1" />
-            <Text className="text-gray-700 font-bold text-lg mt-4">No Students Yet</Text>
+            <Text className="text-gray-700 font-bold text-lg mt-4">No Staff Data Yet</Text>
             <Text className="text-gray-500 text-center mt-2">
-              Create classes and add students to see the leaderboard
+              Staff leaderboard will show CRED points earned by staff members
             </Text>
           </View>
         ) : (
@@ -215,7 +220,7 @@ export default function LeaderboardScreen() {
                 </View>
                 <View className="items-center">
                   <Text className="text-2xl font-bold text-gray-900">{allStudents.length}</Text>
-                  <Text className="text-gray-500 text-xs mt-1">Total Students</Text>
+                  <Text className="text-gray-500 text-xs mt-1">Total Staff</Text>
                 </View>
               </View>
             </View>
@@ -224,12 +229,12 @@ export default function LeaderboardScreen() {
             {activeTab === 'green' && (
               <View>
                 {greenLeaderboard.length > 0 ? (
-                  greenLeaderboard.map((student, index) => renderLeaderboardItem(student, index, true))
+                  greenLeaderboard.map((staff, index) => renderLeaderboardItem(staff, index, true))
                 ) : (
                   <View className="bg-white rounded-xl p-8 items-center">
                     <AlertCircle size={48} color="#64748b" />
                     <Text className="text-gray-500 text-center mt-4">
-                      No students with 1500+ CRED points yet
+                      No staff with 1500+ CRED points yet
                     </Text>
                   </View>
                 )}
@@ -240,12 +245,12 @@ export default function LeaderboardScreen() {
             {activeTab === 'red' && (
               <View>
                 {redLeaderboard.length > 0 ? (
-                  redLeaderboard.map((student, index) => renderLeaderboardItem(student, index, false))
+                  redLeaderboard.map((staff, index) => renderLeaderboardItem(staff, index, false))
                 ) : (
                   <View className="bg-white rounded-xl p-8 items-center">
                     <Award size={48} color="#10b981" />
                     <Text className="text-gray-500 text-center mt-4">
-                      All students are performing excellently!
+                      All staff are performing excellently!
                     </Text>
                   </View>
                 )}

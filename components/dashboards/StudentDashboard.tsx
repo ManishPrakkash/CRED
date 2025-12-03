@@ -19,7 +19,7 @@ export default function StudentDashboard() {
   const router = useRouter();
   const { user, unreadCount } = useAuth();
   
-  const currentClass = user?.joinedClasses?.find(c => c.id === user.currentClassId);
+  const currentClass = user?.joinedClasses?.find(c => c.class_id === user.currentClassId);
 
   const staffStats = [
     { title: 'Total Points', value: '850', icon: <Award size={20} color="#f59e0b" />, color: 'bg-orange-50' },
@@ -72,7 +72,7 @@ export default function StudentDashboard() {
             <BookOpen size={16} color="rgba(255,255,255,0.9)" />
             <Text className="text-white/90 text-xs font-medium mt-1">CLASS</Text>
             <Text className="text-white text-base font-bold mt-0.5" numberOfLines={1}>
-              {currentClass?.name || 'None'}
+              {currentClass?.class_name || 'None'}
             </Text>
           </TouchableOpacity>
           
