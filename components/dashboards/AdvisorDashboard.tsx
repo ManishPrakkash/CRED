@@ -16,15 +16,17 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 export default function AdvisorDashboard() {
   const router = useRouter();
   const { user } = useAuth();
-  const { classes, pendingRequests, getTotalStats } = useClasses();
+  const { classes, getTotalStats } = useClasses();
 
   const stats = getTotalStats();
+  const pendingRequests: any[] = []; // TODO: Will be populated from requests table later
 
   const advisorStats = [
     { title: 'Total Classes', value: stats.totalClasses.toString(), icon: <BookOpen size={20} color="#2563eb" />, color: 'bg-blue-50' },
-    { title: 'Total Students', value: stats.totalStudents.toString(), icon: <Users size={20} color="#10b981" />, color: 'bg-green-50' },
+    // TODO: Remove - no students in this project
+    // { title: 'Total Students', value: stats.totalStudents.toString(), icon: <Users size={20} color="#10b981" />, color: 'bg-green-50' },
     { title: 'Pending Requests', value: pendingRequests.length.toString(), icon: <ClipboardList size={20} color="#f59e0b" />, color: 'bg-orange-50' },
-    { title: 'Avg Students/Class', value: stats.avgStudentsPerClass.toString(), icon: <CheckCircle size={20} color="#8b5cf6" />, color: 'bg-purple-50' },
+    // { title: 'Avg Students/Class', value: stats.avgStudentsPerClass.toString(), icon: <CheckCircle size={20} color="#8b5cf6" />, color: 'bg-purple-50' },
   ];
 
   return (
@@ -108,8 +110,11 @@ export default function AdvisorDashboard() {
                 className="bg-gray-50 rounded-xl p-4 mb-3 border border-gray-100"
               >
                 <View className="flex-1">
-                  <Text className="text-gray-900 font-bold">{cls.name}</Text>
-                  <Text className="text-gray-500 text-sm mt-1">{cls.studentCount} student{cls.studentCount !== 1 ? 's' : ''} enrolled</Text>
+                  <Text className="text-gray-900 font-bold">{cls.class_name}</Text>
+                  <Text className="text-gray-500 text-sm mt-1">
+                    {cls.current_enrollment || 0}
+                    {cls.total_students > 0 ? `/${cls.total_students}` : ''} staff member{(cls.current_enrollment || 0) !== 1 ? 's' : ''}
+                  </Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -118,7 +123,7 @@ export default function AdvisorDashboard() {
           <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm items-center">
             <BookOpen size={48} color="#d1d5db" />
             <Text className="text-gray-900 font-bold text-lg mt-4">No Classes Yet</Text>
-            <Text className="text-gray-500 text-center mt-2 mb-4">Create your first class to start managing students and points</Text>
+            <Text className="text-gray-500 text-center mt-2 mb-4">Create your first class to start managing staff requests and CRED points</Text>
             <TouchableOpacity 
               onPress={() => router.push('/classManagement')}
               className="bg-orange-600 px-6 py-3 rounded-xl"

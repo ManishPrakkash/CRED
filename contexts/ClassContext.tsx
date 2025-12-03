@@ -1,156 +1,161 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
-
-export interface Student {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-  credPoints?: number;
-}
-
-export interface Class {
-  id: string;
-  name: string;
-  code: string;
-  studentCount: number;
-  joinCode: string;
-  students: Student[];
-  createdAt: string;
-}
-
-export interface PendingRequest {
-  id: string;
-  studentName: string;
-  studentEmail: string;
-  avatar?: string;
-  classId: string;
-  requestedAt: string;
-}
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import type { Class, CreateClassParams, JoinedClass } from '@/lib/types';
+import { 
+  createClass as createClassService,
+  getAdvisorClasses,
+  joinClassByCode as joinClassService,
+  getStaffClasses,
+  deleteClass as deleteClassService,
+  getClassById as getClassByIdService,
+} from '@/services/supabaseClasses';
+import { useAuth } from './AuthContext';
 
 interface ClassContextType {
   classes: Class[];
-  pendingRequests: PendingRequest[];
-  createClass: (name: string, code?: string) => Class;
-  deleteClass: (classId: string) => void;
-  addStudentToClass: (classId: string, student: Student) => void;
-  removeStudentFromClass: (classId: string, studentId: string) => void;
-  approvePendingRequest: (requestId: string, classId: string) => void;
-  rejectPendingRequest: (requestId: string) => void;
-  getClassById: (classId: string) => Class | undefined;
-  getTotalStats: () => { totalClasses: number; totalStudents: number; avgStudentsPerClass: number };
+  loading: boolean;
+  createClass: (params: CreateClassParams) => Promise<{ success: boolean; class?: Class; message: string }>;
+  deleteClass: (classId: string) => Promise<{ success: boolean; message: string }>;
+  joinClassByCode: (classCode: string) => Promise<{ success: boolean; class?: Class; message: string }>;
+  getClassById: (classId: string) => Promise<Class | null>;
+  refreshClasses: () => Promise<void>;
+  getTotalStats: () => { totalClasses: number; totalStaff: number; avgStaffPerClass: number };
 }
 
 const ClassContext = createContext<ClassContextType | undefined>(undefined);
 
 export function ClassProvider({ children }: { children: ReactNode }) {
   const [classes, setClasses] = useState<Class[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const { user } = useAuth();
 
-  const generateJoinCode = (name: string): string => {
-    const year = new Date().getFullYear();
-    const random = Math.floor(1000 + Math.random() * 9000);
-    const sanitizedName = name.replace(/\s+/g, '-').toUpperCase().substring(0, 8);
-    return `${sanitizedName}-${year}-${random}`;
-  };
+  // Load classes when user changes
+  useEffect(() => {
+    if (user) {
+      refreshClasses();
+    } else {
+      setClasses([]);
+    }
+  }, [user]);
 
-  const createClass = (name: string, code?: string): Class => {
-    const newClass: Class = {
-      id: `class_${Date.now()}`,
-      name: name.trim(),
-      code: code?.trim() || `CLASS-${classes.length + 1}`,
-      studentCount: 0,
-      joinCode: generateJoinCode(name),
-      students: [],
-      createdAt: new Date().toISOString(),
-    };
+  const refreshClasses = async () => {
+    if (!user) return;
 
-    setClasses(prev => [newClass, ...prev]);
-    return newClass;
-  };
-
-  const deleteClass = (classId: string) => {
-    setClasses(prev => prev.filter(cls => cls.id !== classId));
-    // Also remove pending requests for this class
-    setPendingRequests(prev => prev.filter(req => req.classId !== classId));
-  };
-
-  const addStudentToClass = (classId: string, student: Student) => {
-    setClasses(prev => prev.map(cls => {
-      if (cls.id === classId) {
-        // Check if student already exists
-        if (cls.students.some(s => s.id === student.id)) {
-          return cls;
-        }
-        return {
-          ...cls,
-          students: [...cls.students, student],
-          studentCount: cls.studentCount + 1,
-        };
+    setLoading(true);
+    try {
+      if (user.role === 'advisor') {
+        // Load advisor's classes
+        const advisorClasses = await getAdvisorClasses(user.id);
+        setClasses(advisorClasses);
+      } else if (user.role === 'staff') {
+        // Load staff's joined classes (just the metadata from joined_classes JSONB)
+        const joinedClasses = await getStaffClasses(user.id);
+        // For staff, we can store joined classes differently or fetch full class data
+        // For now, we'll keep classes empty for staff - they manage via joined_classes
+        setClasses([]);
       }
-      return cls;
-    }));
+    } catch (error: any) {
+      console.error('Failed to load classes:', error);
+      setClasses([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeStudentFromClass = (classId: string, studentId: string) => {
-    setClasses(prev => prev.map(cls => {
-      if (cls.id === classId) {
-        return {
-          ...cls,
-          students: cls.students.filter(s => s.id !== studentId),
-          studentCount: Math.max(0, cls.studentCount - 1),
-        };
+  const createClass = async (params: CreateClassParams): Promise<{ success: boolean; class?: Class; message: string }> => {
+    if (!user || user.role !== 'advisor') {
+      return {
+        success: false,
+        message: 'Only advisors can create classes',
+      };
+    }
+
+    try {
+      const newClass = await createClassService(user.id, params);
+      setClasses(prev => [newClass, ...prev]);
+      return {
+        success: true,
+        class: newClass,
+        message: 'Class created successfully',
+      };
+    } catch (error: any) {
+      console.error('Create class error:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to create class',
+      };
+    }
+  };
+
+  const deleteClass = async (classId: string): Promise<{ success: boolean; message: string }> => {
+    if (!user || user.role !== 'advisor') {
+      return {
+        success: false,
+        message: 'Only advisors can delete classes',
+      };
+    }
+
+    try {
+      const result = await deleteClassService(classId, user.id);
+      if (result.success) {
+        setClasses(prev => prev.filter(cls => cls.id !== classId));
       }
-      return cls;
-    }));
+      return result;
+    } catch (error: any) {
+      console.error('Delete class error:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete class',
+      };
+    }
   };
 
-  const approvePendingRequest = (requestId: string, classId: string) => {
-    const request = pendingRequests.find(r => r.id === requestId);
-    if (!request) return;
+  const joinClassByCode = async (classCode: string): Promise<{ success: boolean; class?: Class; message: string }> => {
+    if (!user || user.role !== 'staff') {
+      return {
+        success: false,
+        message: 'Only staff can join classes',
+      };
+    }
 
-    // Add student to class
-    const newStudent: Student = {
-      id: requestId,
-      name: request.studentName,
-      email: request.studentEmail,
-      avatar: request.avatar,
-      credPoints: 0,
-    };
-
-    addStudentToClass(classId, newStudent);
-
-    // Remove from pending requests
-    setPendingRequests(prev => prev.filter(r => r.id !== requestId));
+    try {
+      const result = await joinClassService(user.id, classCode);
+      return result;
+    } catch (error: any) {
+      console.error('Join class error:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to join class',
+      };
+    }
   };
 
-  const rejectPendingRequest = (requestId: string) => {
-    setPendingRequests(prev => prev.filter(r => r.id !== requestId));
-  };
-
-  const getClassById = (classId: string): Class | undefined => {
-    return classes.find(cls => cls.id === classId);
+  const getClassById = async (classId: string): Promise<Class | null> => {
+    try {
+      return await getClassByIdService(classId);
+    } catch (error) {
+      console.error('Get class by ID error:', error);
+      return null;
+    }
   };
 
   const getTotalStats = () => {
     const totalClasses = classes.length;
-    const totalStudents = classes.reduce((sum, cls) => sum + cls.studentCount, 0);
-    const avgStudentsPerClass = totalClasses > 0 ? Math.round(totalStudents / totalClasses) : 0;
+    const totalStaff = classes.reduce((sum, cls) => sum + (cls.current_enrollment || 0), 0);
+    const avgStaffPerClass = totalClasses > 0 ? Math.round(totalStaff / totalClasses) : 0;
 
-    return { totalClasses, totalStudents, avgStudentsPerClass };
+    return { totalClasses, totalStaff, avgStaffPerClass };
   };
 
   return (
     <ClassContext.Provider
       value={{
         classes,
-        pendingRequests,
+        loading,
         createClass,
         deleteClass,
-        addStudentToClass,
-        removeStudentFromClass,
-        approvePendingRequest,
-        rejectPendingRequest,
+        joinClassByCode,
         getClassById,
+        refreshClasses,
         getTotalStats,
       }}
     >

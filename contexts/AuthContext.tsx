@@ -1,5 +1,6 @@
 import type { User, JoinedClass, Notification } from '@/lib/types';
 import { loginWithSupabase } from '@/services/supabaseAuth';
+import { joinClassByCode as joinClassService, getStaffClasses, validateAndCleanJoinedClasses } from '@/services/supabaseClasses';
 import { NotificationService } from '@/services/notificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useState, useEffect } from 'react';
@@ -12,6 +13,7 @@ interface AuthContextType {
   joinClass: (joinCode: string) => Promise<void>;
   switchClass: (classId: string) => void;
   deleteClass: (classId: string) => void;
+  refreshJoinedClasses: () => Promise<void>;
   hasJoinedClasses: boolean;
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void;
   markNotificationAsRead: (notificationId: string) => void;
@@ -79,16 +81,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userData = await loginWithSupabase(email, password);
       
-      // Load persistent data (joined classes) for this user
-      const persistentDataKey = `${USER_DATA_PREFIX}${userData.id}`;
-      const storedData = await AsyncStorage.getItem(persistentDataKey);
-      
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        // Restore joined classes but NOT currentClassId
-        // Staff must select class each time they log in
-        userData.joinedClasses = parsedData.joinedClasses || [];
-        userData.currentClassId = null; // Force them to select a class
+      // For staff users, load joined classes from database
+      if (userData.role === 'staff') {
+        try {
+          const joinedClasses = await getStaffClasses(userData.id);
+          userData.joinedClasses = joinedClasses;
+          // Set first class as active if available
+          userData.currentClassId = joinedClasses.length > 0 ? joinedClasses[0].class_id : null;
+        } catch (error) {
+          console.error('Failed to load joined classes:', error);
+          userData.joinedClasses = [];
+          userData.currentClassId = null;
+        }
       }
       
       // Load notifications from NotificationService
@@ -119,29 +123,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Only staff can join classes');
     }
 
-    // Check if already joined this class
-    const existingClass = user.joinedClasses?.find(c => c.joinCode === joinCode);
-    if (existingClass) {
-      // Just switch to this class
-      switchClass(existingClass.id);
-      throw new Error('You have already joined this class. Switched to it.');
+    // Use Supabase service to validate and join class
+    const result = await joinClassService(user.id, joinCode.toUpperCase());
+    
+    if (!result.success) {
+      throw new Error(result.message);
     }
 
-    // Create new class entry
-    const newClass: JoinedClass = {
-      id: `class-${Date.now()}`,
-      name: `Class ${joinCode}`,
-      joinCode: joinCode,
-      joinedAt: new Date().toISOString(),
-    };
+    // Refresh user's joined classes from database
+    await refreshJoinedClasses();
+  };
 
-    const updatedUser = {
-      ...user,
-      joinedClasses: [...(user.joinedClasses || []), newClass],
-      currentClassId: newClass.id,
-    };
+  const refreshJoinedClasses = async () => {
+    if (!user || user.role !== 'staff') return;
 
-    setUser(updatedUser);
+    try {
+      // Just get the current joined classes without cleaning
+      const joinedClasses = await getStaffClasses(user.id);
+      setUser({
+        ...user,
+        joinedClasses,
+        // Set first class as active if none selected
+        currentClassId: user.currentClassId || (joinedClasses.length > 0 ? joinedClasses[0].class_id : null),
+      });
+    } catch (error) {
+      console.error('Failed to refresh joined classes:', error);
+    }
   };
 
   const switchClass = (classId: string) => {
@@ -156,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteClass = (classId: string) => {
     if (!user) return;
     
-    const updatedClasses = user.joinedClasses?.filter(c => c.id !== classId) || [];
+    const updatedClasses = user.joinedClasses?.filter(c => c.class_id !== classId) || [];
     const updatedUser = {
       ...user,
       joinedClasses: updatedClasses,
@@ -226,7 +233,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading, 
       joinClass, 
       switchClass, 
-      deleteClass, 
+      deleteClass,
+      refreshJoinedClasses,
       hasJoinedClasses,
       addNotification,
       markNotificationAsRead,
