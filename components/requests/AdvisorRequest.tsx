@@ -2,7 +2,7 @@ import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationService } from '@/services/notificationService';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Check, Plus, Search, User, X } from 'lucide-react-native';
+import { Check, ClipboardList, Search, User, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { FlatList, ScrollView, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -147,8 +147,8 @@ export default function AdvisorRequest() {
                 <Text className="text-gray-500 text-sm">{item.staffId || item.userId}</Text>
               </View>
             </View>
-            <View className="px-3 py-1 rounded-full self-start bg-orange-100">
-              <Text className="text-sm font-bold text-orange-700">
+            <View className="px-3 py-1 rounded-full self-start bg-green-100">
+              <Text className="text-sm font-bold text-green-700">
                 +{item.points} points requested
               </Text>
             </View>
@@ -203,7 +203,7 @@ export default function AdvisorRequest() {
           )}
         </View>
         <View className="items-end">
-          <Text className="font-bold text-lg text-orange-600">
+          <Text className="font-bold text-lg text-green-600">
             +{item.points}
           </Text>
           <View className={`mt-2 px-3 py-1 rounded-full ${
