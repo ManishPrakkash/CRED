@@ -326,6 +326,67 @@ export const getClassStaffCount = async (classId: string): Promise<number> => {
 };
 
 /**
+ * Get staff members enrolled in a class
+ * @param classId - The class ID
+ */
+export const getClassStaff = async (classId: string): Promise<Array<{ id: string; name: string; email: string; avatar?: string | null; joined_at: string }>> => {
+  try {
+    console.log('[getClassStaff] Fetching staff for class ID:', classId);
+    
+    // Fetch all staff users with their joined_classes
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, name, email, avatar, joined_classes')
+      .eq('role', 'staff');
+
+    if (error) {
+      console.error('[getClassStaff] Database error:', error);
+      throw new Error(error.message || 'Failed to fetch staff list');
+    }
+
+    console.log('[getClassStaff] Total staff users found:', users?.length || 0);
+    
+    const staffList: Array<{ id: string; name: string; email: string; avatar?: string | null; joined_at: string }> = [];
+
+    // Filter users who have this class in their joined_classes array
+    (users || []).forEach((user: any) => {
+      console.log(`[getClassStaff] Checking user ${user.name}:`, {
+        joined_classes: user.joined_classes,
+        has_joined_classes: !!user.joined_classes,
+        joined_classes_length: user.joined_classes?.length || 0
+      });
+      
+      const joinedClass = (user.joined_classes || []).find((jc: any) => {
+        console.log(`[getClassStaff] Comparing class IDs: ${jc.class_id} === ${classId}`, jc.class_id === classId);
+        return jc.class_id === classId;
+      });
+      
+      if (joinedClass) {
+        console.log(`[getClassStaff] ✓ User ${user.name} is enrolled in this class`);
+        staffList.push({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+          joined_at: joinedClass.joined_at,
+        });
+      }
+    });
+
+    console.log('[getClassStaff] Final staff list:', staffList);
+    console.log('[getClassStaff] Total enrolled staff:', staffList.length);
+
+    // Sort by joined date (most recent first)
+    staffList.sort((a, b) => new Date(b.joined_at).getTime() - new Date(a.joined_at).getTime());
+
+    return staffList;
+  } catch (error: any) {
+    console.error('[getClassStaff] Error:', error);
+    throw new Error(error.message || 'Failed to fetch staff list');
+  }
+};
+
+/**
  * Validate and clean staff's joined classes
  * Removes classes that no longer exist in database
  * @param staffId - The staff user ID
