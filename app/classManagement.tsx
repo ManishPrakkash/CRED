@@ -1,12 +1,21 @@
 import BottomNav from '@/components/BottomNav';
 import DeleteClassModal from '@/components/DeleteClassModal';
 import { useClasses } from '@/contexts/ClassContext';
+import { getClassStaff } from '@/services/supabaseClasses';
 // import { mockStudents } from '@/services/mockData';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BookOpen, Check, Copy, Plus, Search, Trash2, Users, X } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, Check, Copy, Plus, Search, Trash2, Users, X } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, FlatList, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+
+interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string | null;
+  joined_at: string;
+}
 
 const ClassManagementScreen = () => {
   const { classes, loading, createClass, deleteClass } = useClasses();
@@ -20,6 +29,9 @@ const ClassManagementScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [classToDelete, setClassToDelete] = useState<any>(null);
+  const [viewingClass, setViewingClass] = useState<{ id: string; name: string; code: string } | null>(null);
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
 
   const handleCreateClass = async () => {
     if (!className.trim()) {
@@ -55,6 +67,31 @@ const ClassManagementScreen = () => {
     } else {
       Alert.alert('Error', result.message);
     }
+  };
+
+  const handleViewClassStaff = async (classId: string, className: string, classCode: string) => {
+    console.log('Viewing class staff:', { classId, className, classCode });
+    setViewingClass({ id: classId, name: className, code: classCode });
+    setIsLoadingStaff(true);
+    setStaffList([]);
+
+    try {
+      console.log('Fetching staff for class:', classId);
+      const staff = await getClassStaff(classId);
+      console.log('Staff data received:', staff);
+      setStaffList(staff);
+    } catch (error: any) {
+      console.error('Error loading staff:', error);
+      Alert.alert('Error', error.message || 'Failed to load staff list');
+      setViewingClass(null);
+    } finally {
+      setIsLoadingStaff(false);
+    }
+  };
+
+  const formatJoinedDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   // TODO: Remove - no students in this project
@@ -165,9 +202,12 @@ const ClassManagementScreen = () => {
   const renderClassItem = ({ item }: { item: any }) => (
     <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
       <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center flex-1">
-          <View className="w-12 h-12 rounded-xl bg-orange-100 items-center justify-center">
-            <BookOpen size={24} color="#f59e0b" />
+        <TouchableOpacity 
+          className="flex-row items-center flex-1"
+          onPress={() => handleViewClassStaff(item.id, item.class_name, item.class_code)}
+        >
+          <View className="w-12 h-12 rounded-xl bg-green-100 items-center justify-center">
+            <BookOpen size={24} color="#10b981" />
           </View>
           <View className="ml-3 flex-1">
             <Text className="font-bold text-gray-800 text-lg">{item.class_name}</Text>
@@ -175,15 +215,15 @@ const ClassManagementScreen = () => {
             {item.department && (
               <Text className="text-gray-400 text-xs mt-0.5">{item.department}</Text>
             )}
-            <View className="flex-row items-center bg-orange-50 px-2 py-1 rounded-full mt-1 self-start">
-              <Users size={12} color="#f59e0b" />
-              <Text className="text-orange-700 ml-1 font-medium text-xs">
+            <View className="flex-row items-center bg-green-50 px-2 py-1 rounded-full mt-1 self-start">
+              <Users size={12} color="#10b981" />
+              <Text className="text-green-700 ml-1 font-medium text-xs">
                 {item.current_enrollment || 0}
                 {item.total_students > 0 ? `/${item.total_students}` : ''} Staff
               </Text>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
         
         <TouchableOpacity
           onPress={() => handleDeleteClass(item)}
@@ -251,9 +291,177 @@ const ClassManagementScreen = () => {
 
   return (
     <View className="flex-1 bg-gray-50">
+      {viewingClass ? (
+        // Staff List View
+        <View className="flex-1 bg-gray-50">
+          {/* Header */}
+          <LinearGradient 
+            colors={['#10b981', '#059669']} 
+            style={{ paddingBottom: 32 }}
+          >
+            <View style={{ paddingTop: 64, paddingBottom: 16, paddingHorizontal: 24 }}>
+              <TouchableOpacity 
+                onPress={() => setViewingClass(null)}
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
+              >
+                <ArrowLeft size={24} color="white" />
+                <Text style={{ color: 'white', marginLeft: 8, fontSize: 16 }}>Back to Classes</Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'white', fontSize: 24, fontWeight: 'bold' }}>{viewingClass.name}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14 }}>Code: {viewingClass.code}</Text>
+                <View style={{ 
+                  marginLeft: 16, 
+                  flexDirection: 'row', 
+                  alignItems: 'center', 
+                  backgroundColor: 'rgba(255,255,255,0.2)', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 4, 
+                  borderRadius: 12 
+                }}>
+                  <Users size={14} color="white" />
+                  <Text style={{ color: 'white', marginLeft: 4, fontWeight: '500', fontSize: 14 }}>
+                    {staffList.length} Staff
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </LinearGradient>
+
+          <ScrollView 
+            style={{ flex: 1, paddingHorizontal: 16, marginTop: -24 }}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {isLoadingStaff ? (
+              <View style={{ 
+                backgroundColor: 'white', 
+                borderRadius: 16, 
+                padding: 48, 
+                alignItems: 'center',
+                marginTop: 8,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 2,
+              }}>
+                <ActivityIndicator size="large" color="#10b981" />
+                <Text style={{ color: '#6b7280', marginTop: 16, fontSize: 14 }}>Loading staff...</Text>
+              </View>
+            ) : staffList.length === 0 ? (
+              <View style={{ 
+                backgroundColor: 'white', 
+                borderRadius: 16, 
+                padding: 48, 
+                alignItems: 'center',
+                marginTop: 8,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 2,
+              }}>
+                <View style={{ 
+                  width: 80, 
+                  height: 80, 
+                  backgroundColor: '#f3f4f6', 
+                  borderRadius: 40, 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  marginBottom: 16
+                }}>
+                  <Users size={40} color="#9ca3af" />
+                </View>
+                <Text style={{ color: '#111827', fontWeight: 'bold', fontSize: 18, marginBottom: 8 }}>No Staff Enrolled</Text>
+                <Text style={{ color: '#6b7280', textAlign: 'center', fontSize: 14, lineHeight: 20, paddingHorizontal: 40 }}>
+                  Staff members will appear here once they join this class using the class code
+                </Text>
+              </View>
+            ) : (
+              <View style={{ paddingTop: 8 }}>
+                <View style={{ 
+                  backgroundColor: 'white',
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  marginBottom: 16
+                }}>
+                  <Text style={{ color: '#6b7280', fontSize: 12, fontWeight: '600', letterSpacing: 0.5 }}>
+                    ENROLLED MEMBERS
+                  </Text>
+                </View>
+                {staffList.map((staff, index) => (
+                  <View
+                    key={staff.id}
+                    style={{
+                      backgroundColor: 'white',
+                      borderRadius: 16,
+                      padding: 16,
+                      marginBottom: 12,
+                      borderWidth: 1,
+                      borderColor: '#e5e7eb',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 2,
+                      elevation: 1,
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{
+                        width: 52,
+                        height: 52,
+                        backgroundColor: '#fed7aa',
+                        borderRadius: 26,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderWidth: 2,
+                        borderColor: '#fdba74',
+                      }}>
+                        <Text style={{ color: '#10b981', fontWeight: 'bold', fontSize: 22 }}>
+                          {staff.name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 16 }}>
+                        <Text style={{ color: '#111827', fontWeight: '600', fontSize: 16, marginBottom: 4 }}>
+                          {staff.name}
+                        </Text>
+                        <Text style={{ color: '#6b7280', fontSize: 13 }}>
+                          {staff.email}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end', marginLeft: 12 }}>
+                        <View style={{ 
+                          backgroundColor: '#ffedd5', 
+                          paddingHorizontal: 10, 
+                          paddingVertical: 5, 
+                          borderRadius: 8,
+                          marginBottom: 6
+                        }}>
+                          <Text style={{ color: '#10b981', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>
+                            JOINED
+                          </Text>
+                        </View>
+                        <Text style={{ color: '#6b7280', fontSize: 12, fontWeight: '500' }}>
+                          {formatJoinedDate(staff.joined_at)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </ScrollView>
+          
+          <BottomNav />
+        </View>
+      ) : (
+        // Original Class Management View
+        <View className="flex-1">
       {/* Header */}
       <LinearGradient 
-        colors={['#f59e0b', '#f97316']} 
+        colors={['#10b981', '#059669']} 
         className="pb-8"
       >
         <View className="pt-16 pb-4 px-6">
@@ -348,7 +556,7 @@ const ClassManagementScreen = () => {
               </TouchableOpacity>
               
               <TouchableOpacity 
-                className="flex-1 bg-orange-600 py-3 rounded-lg items-center"
+                className="flex-1 bg-green-600 py-3 rounded-lg items-center"
                 onPress={handleCreateClass}
                 disabled={loading}
               >
@@ -363,8 +571,8 @@ const ClassManagementScreen = () => {
             className="flex-row items-center bg-white rounded-xl p-4 mb-6 shadow-sm"
             onPress={() => setShowCreateForm(true)}
           >
-            <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center">
-              <Plus size={20} color="#f59e0b" />
+            <View className="w-10 h-10 rounded-full bg-green-100 items-center justify-center">
+              <Plus size={20} color="#10b981" />
             </View>
             <Text className="ml-3 text-gray-800 font-bold">Create New Class</Text>
           </TouchableOpacity>
@@ -412,6 +620,8 @@ const ClassManagementScreen = () => {
       />
       
       <BottomNav />
+        </View>
+      )}
     </View>
   );
 };
