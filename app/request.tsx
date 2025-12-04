@@ -1,5 +1,5 @@
 import AdvisorRequest from '@/components/requests/AdvisorRequest';
-import RepresentativeRequest from '@/components/requests/RepresentativeRequest';
+import StaffRequest from '@/components/requests/RepresentativeRequest';
 import { useAuth } from '@/contexts/AuthContext';
 import React from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
@@ -28,7 +28,7 @@ export default function RequestManagementScreen() {
   if (user.role === 'advisor') {
     return <AdvisorRequest />;
   } else if (user.role === 'staff') {
-    return <RepresentativeRequest />;
+    return <StaffRequest />;
   }
 
   // No access for other roles
