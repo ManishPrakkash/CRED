@@ -522,7 +522,7 @@ const ClassManagementScreen = () => {
                     className="border border-gray-300 rounded-lg p-3"
                     placeholder="e.g., CS301"
                     value={classCode}
-                    onChangeText={setClassCode}
+                    onChangeText={(text) => setClassCode(text.toUpperCase())}
                     autoCapitalize="characters"
                   />
                 </View>
