@@ -29,28 +29,61 @@ export default function LeaderboardScreen() {
   // For advisors, show class selection first
   const isAdvisor = user?.role === 'advisor';
 
-  // Fetch all staff members with their CRED points (only for non-advisors)
+  // Fetch staff members with their CRED points
   useEffect(() => {
     if (isAdvisor) return; // Advisors see class selection instead
     
     const fetchStaffData = async () => {
       try {
         setLoadingStaff(true);
-        console.log('[Leaderboard] Fetching staff data...');
+        console.log('[Leaderboard] Fetching staff data for staff user...');
         
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, name, email, employee_id, cred_points, avatar')
-          .eq('role', 'staff')
-          .order('cred_points', { ascending: false });
+        // For staff users, only show leaderboard for their current class
+        if (user?.role === 'staff' && user.currentClassId) {
+          console.log('[Leaderboard] Filtering by current class:', user.currentClassId);
+          
+          // Get all users who are staff
+          const { data: allStaff, error: staffError } = await supabase
+            .from('users')
+            .select('id, name, email, employee_id, cred_points, avatar, joined_classes')
+            .eq('role', 'staff');
 
-        if (error) {
-          console.error('[Leaderboard] Error fetching staff:', error);
-          return;
+          if (staffError) {
+            console.error('[Leaderboard] Error fetching staff:', staffError);
+            return;
+          }
+
+          // Filter staff who have joined the current class
+          const classStaff = (allStaff || []).filter(staff => {
+            const joinedClasses = staff.joined_classes || [];
+            return joinedClasses.some((jc: any) => jc.class_id === user.currentClassId);
+          }).map(staff => ({
+            id: staff.id,
+            name: staff.name,
+            email: staff.email,
+            employee_id: staff.employee_id,
+            cred_points: staff.cred_points || 0,
+            avatar: staff.avatar,
+          }));
+
+          console.log('[Leaderboard] Staff in current class:', classStaff.length);
+          setStaffData(classStaff);
+        } else {
+          // Fallback: show all staff (shouldn't happen for staff users with a class)
+          const { data, error } = await supabase
+            .from('users')
+            .select('id, name, email, employee_id, cred_points, avatar')
+            .eq('role', 'staff')
+            .order('cred_points', { ascending: false });
+
+          if (error) {
+            console.error('[Leaderboard] Error fetching staff:', error);
+            return;
+          }
+
+          console.log('[Leaderboard] Staff data fetched:', data?.length || 0, 'staff members');
+          setStaffData(data || []);
         }
-
-        console.log('[Leaderboard] Staff data fetched:', data?.length || 0, 'staff members');
-        setStaffData(data || []);
       } catch (error) {
         console.error('[Leaderboard] Error:', error);
       } finally {
@@ -59,7 +92,7 @@ export default function LeaderboardScreen() {
     };
 
     fetchStaffData();
-  }, [isAdvisor]);
+  }, [isAdvisor, user?.currentClassId]);
 
   // Separate staff into green (>=1500) and red (<1500) leaderboards
   const greenLeaderboard = useMemo(() => {
