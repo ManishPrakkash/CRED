@@ -25,6 +25,7 @@ export interface User {
   currentClassId?: string | null;
   joinedClasses?: JoinedClass[];
   notifications?: Notification[];
+  cred_points?: number;
 }
 
 // Joined Class interface for staff (stored in users.joined_classes JSONB)

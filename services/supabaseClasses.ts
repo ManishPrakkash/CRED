@@ -524,6 +524,30 @@ export const validateAndCleanJoinedClasses = async (
 };
 
 /**
+ * Get staff CRED points from database
+ * @param staffId - The staff user ID
+ */
+export const getStaffCredPoints = async (staffId: string): Promise<number> => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('cred_points')
+      .eq('id', staffId)
+      .single();
+
+    if (error) {
+      console.error('Get staff CRED points error:', error);
+      return 0;
+    }
+
+    return data?.cred_points || 0;
+  } catch (error: any) {
+    console.error('Get staff CRED points error:', error);
+    return 0;
+  }
+};
+
+/**
  * Staff leaves a class
  * Removes class from user's joined_classes and decrements current_enrollment
  * @param staffId - The staff user ID
