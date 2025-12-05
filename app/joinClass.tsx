@@ -1,18 +1,18 @@
-import DeleteClassModal from '@/components/DeleteClassModal';
+import LeaveClassModal from '@/components/LeaveClassModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { validateAndCleanJoinedClasses } from '@/services/supabaseClasses';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { BookOpen, CheckCircle, Plus, Trash2 } from 'lucide-react-native';
+import { BookOpen, CheckCircle, Plus, LogOut } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function JoinClassScreen() {
   const router = useRouter();
-  const { user, joinClass, switchClass, deleteClass, refreshJoinedClasses } = useAuth();
+  const { user, joinClass, switchClass, leaveClass, refreshJoinedClasses } = useAuth();
   const [joinCode, setJoinCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
-  const [classToDelete, setClassToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [classToLeave, setClassToLeave] = useState<{ id: string; name: string } | null>(null);
 
 
   const handleJoinClass = async () => {
@@ -53,31 +53,35 @@ export default function JoinClassScreen() {
     router.replace('/');
   };
 
-  const handleDeleteClass = (classId: string, className: string) => {
+  const handleLeaveClass = (classId: string, className: string) => {
     Alert.alert(
-      'Delete Class',
-      `Are you sure you want to remove "${className}" from your classes? This action cannot be undone.`,
+      'Leave Class',
+      `Are you sure you want to leave "${className}"? You can rejoin later if needed.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => setClassToDelete({ id: classId, name: className }),
+          text: 'Continue',
+          style: 'default',
+          onPress: () => setClassToLeave({ id: classId, name: className }),
         },
       ]
     );
   };
 
-  const confirmDelete = () => {
-    if (classToDelete) {
-      deleteClass(classToDelete.id);
-      setClassToDelete(null);
-      Alert.alert('Success', 'Class has been removed from your list.');
+  const confirmLeave = async () => {
+    if (classToLeave) {
+      try {
+        await leaveClass(classToLeave.id);
+        setClassToLeave(null);
+        Alert.alert('Success', `You have left ${classToLeave.name}. You can rejoin anytime if needed.`);
+      } catch (error: any) {
+        Alert.alert('Error', error.message || 'Failed to leave class');
+      }
     }
   };
 
-  const cancelDelete = () => {
-    setClassToDelete(null);
+  const cancelLeave = () => {
+    setClassToLeave(null);
   };
 
   return (
@@ -178,13 +182,13 @@ export default function JoinClassScreen() {
                   </View>
                 </TouchableOpacity>
                 
-                {/* Delete Button */}
+                {/* Leave Button */}
                 <TouchableOpacity
-                  onPress={() => handleDeleteClass(joinedClass.class_id, joinedClass.class_name)}
-                  className="absolute top-3 right-3 w-9 h-9 rounded-lg bg-red-50 items-center justify-center border border-red-200"
+                  onPress={() => handleLeaveClass(joinedClass.class_id, joinedClass.class_name)}
+                  className="absolute top-3 right-3 w-9 h-9 rounded-lg bg-yellow-50 items-center justify-center border border-yellow-300"
                   activeOpacity={0.7}
                 >
-                  <Trash2 size={16} color="#dc2626" />
+                  <LogOut size={16} color="#d97706" />
                 </TouchableOpacity>
               </View>
             ))}
@@ -192,12 +196,12 @@ export default function JoinClassScreen() {
         )}
       </ScrollView>
 
-      {/* Delete Class Modal */}
-      <DeleteClassModal
-        visible={classToDelete !== null}
-        className={classToDelete?.name || ''}
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
+      {/* Leave Class Modal */}
+      <LeaveClassModal
+        visible={classToLeave !== null}
+        className={classToLeave?.name || ''}
+        onConfirm={confirmLeave}
+        onCancel={cancelLeave}
       />
     </View>
   );
