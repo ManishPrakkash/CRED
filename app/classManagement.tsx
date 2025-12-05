@@ -51,6 +51,32 @@ const ClassManagementScreen = () => {
       return;
     }
 
+    // Check for duplicate class name
+    const duplicateName = classes.find(
+      (c) => c.class_name.toLowerCase() === className.trim().toLowerCase()
+    );
+    if (duplicateName) {
+      Alert.alert(
+        'Duplicate Class Name', 
+        `A class named "${duplicateName.class_name}" already exists in your classes.\n\nPlease choose a different name.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Check for duplicate class code
+    const duplicateCode = classes.find(
+      (c) => c.class_code.toUpperCase() === classCode.trim().toUpperCase()
+    );
+    if (duplicateCode) {
+      Alert.alert(
+        'Duplicate Class Code',
+        `The code "${duplicateCode.class_code}" is already used for "${duplicateCode.class_name}".\n\nPlease use a different class code.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     const result = await createClass({
       class_name: className.trim(),
       class_code: classCode.trim().toUpperCase(),

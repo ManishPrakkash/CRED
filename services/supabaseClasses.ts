@@ -11,6 +11,30 @@ export const createClass = async (
   params: CreateClassParams
 ): Promise<Class> => {
   try {
+    // Check for duplicate class code
+    const { data: existingByCode } = await supabase
+      .from('classes')
+      .select('id, class_code')
+      .eq('class_code', params.class_code)
+      .eq('advisor_id', advisorId)
+      .maybeSingle();
+
+    if (existingByCode) {
+      throw new Error(`The class code "${params.class_code}" is already in use. Please use a different code.`);
+    }
+
+    // Check for duplicate class name
+    const { data: existingByName } = await supabase
+      .from('classes')
+      .select('id, class_name')
+      .ilike('class_name', params.class_name)
+      .eq('advisor_id', advisorId)
+      .maybeSingle();
+
+    if (existingByName) {
+      throw new Error(`A class named "${params.class_name}" already exists. Please use a different name.`);
+    }
+
     const { data, error } = await supabase
       .from('classes')
       .insert([{
