@@ -451,3 +451,89 @@ export const validateAndCleanJoinedClasses = async (
     return { validClasses: [], removedClasses: [] };
   }
 };
+
+/**
+ * Staff leaves a class
+ * Removes class from user's joined_classes and decrements current_enrollment
+ * @param staffId - The staff user ID
+ * @param classId - The class ID to leave
+ */
+export const leaveClass = async (
+  staffId: string,
+  classId: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    // 1. Get current user's joined_classes
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('joined_classes')
+      .eq('id', staffId)
+      .single();
+
+    if (userError) {
+      console.error('Get user error:', userError);
+      throw new Error('Failed to fetch user data');
+    }
+
+    const currentJoinedClasses = (userData?.joined_classes || []) as JoinedClass[];
+
+    // 2. Find the class to leave
+    const classToLeave = currentJoinedClasses.find(
+      (jc: JoinedClass) => jc.class_id === classId
+    );
+
+    if (!classToLeave) {
+      return {
+        success: false,
+        message: 'You are not a member of this class.',
+      };
+    }
+
+    // 3. Remove class from joined_classes array
+    const updatedJoinedClasses = currentJoinedClasses.filter(
+      (jc: JoinedClass) => jc.class_id !== classId
+    );
+
+    const { error: updateUserError } = await supabase
+      .from('users')
+      .update({ joined_classes: updatedJoinedClasses })
+      .eq('id', staffId);
+
+    if (updateUserError) {
+      console.error('Update user joined_classes error:', updateUserError);
+      throw new Error('Failed to leave class');
+    }
+
+    // 4. Decrement current_enrollment in classes table
+    const { data: classData, error: getClassError } = await supabase
+      .from('classes')
+      .select('current_enrollment')
+      .eq('id', classId)
+      .single();
+
+    if (!getClassError && classData) {
+      const newEnrollment = Math.max(0, (classData.current_enrollment || 1) - 1);
+      
+      const { error: updateClassError } = await supabase
+        .from('classes')
+        .update({ current_enrollment: newEnrollment })
+        .eq('id', classId);
+
+      if (updateClassError) {
+        console.error('Update class current_enrollment error:', updateClassError);
+        // Don't throw - user is already removed, just log the error
+      }
+    }
+
+    return {
+      success: true,
+      message: `Successfully left ${classToLeave.class_name}. You can rejoin anytime if needed.`,
+    };
+  } catch (error: any) {
+    console.error('Leave class error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to leave class',
+    };
+  }
+};
