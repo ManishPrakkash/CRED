@@ -49,7 +49,12 @@ export default function StudentDashboard() {
         className="px-6 pt-10 pb-4 rounded-b-2xl"
       >
         <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-white text-xl font-bold">{user?.name}</Text>
+          <View>
+            <Text className="text-white text-xl font-bold">{user?.name}</Text>
+            {currentClass?.advisor_name && (
+              <Text className="text-white/80 text-sm mt-0.5">Advisor: {currentClass.advisor_name}</Text>
+            )}
+          </View>
           <TouchableOpacity 
             className="p-2 bg-white/20 rounded-lg relative"
             onPress={() => router.push('/notifications')}
