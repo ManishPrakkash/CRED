@@ -6,7 +6,7 @@ import { getClassStaff } from '@/services/supabaseClasses';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, BookOpen, Check, Copy, Plus, Search, Trash2, Users, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, FlatList, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
 interface StaffMember {
@@ -33,12 +33,19 @@ const ClassManagementScreen = () => {
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
 
+  // Open delete modal only after classToDelete state is set
+  useEffect(() => {
+    if (classToDelete) {
+      setShowDeleteModal(true);
+    }
+  }, [classToDelete]);
+
   const handleCreateClass = async () => {
     if (!className.trim()) {
       Alert.alert('Error', 'Please enter a class name');
       return;
     }
-    
+
     if (!classCode.trim()) {
       Alert.alert('Error', 'Please enter a class code');
       return;
@@ -52,7 +59,7 @@ const ClassManagementScreen = () => {
       academic_year: academicYear.trim() || undefined,
       total_students: maxCapacity.trim() ? parseInt(maxCapacity.trim()) : undefined,
     });
-    
+
     if (result.success) {
       setClassName('');
       setClassCode('');
@@ -172,7 +179,6 @@ const ClassManagementScreen = () => {
           style: 'destructive',
           onPress: () => {
             setClassToDelete(classItem);
-            setShowDeleteModal(true);
           },
         },
       ],
@@ -192,9 +198,7 @@ const ClassManagementScreen = () => {
         Alert.alert('Error', result.message);
       }
     }
-  };
-
-  const cancelDelete = () => {
+  };  const cancelDelete = () => {
     setShowDeleteModal(false);
     setClassToDelete(null);
   };
@@ -202,7 +206,7 @@ const ClassManagementScreen = () => {
   const renderClassItem = ({ item }: { item: any }) => (
     <View className="bg-white rounded-xl p-4 mb-4 shadow-sm border border-gray-100">
       <View className="flex-row items-center justify-between">
-        <TouchableOpacity 
+        <TouchableOpacity
           className="flex-row items-center flex-1"
           onPress={() => handleViewClassStaff(item.id, item.class_name, item.class_code)}
         >
@@ -224,7 +228,7 @@ const ClassManagementScreen = () => {
             </View>
           </View>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           onPress={() => handleDeleteClass(item)}
           className="bg-red-50 p-2.5 rounded-lg ml-3"
@@ -295,12 +299,12 @@ const ClassManagementScreen = () => {
         // Staff List View
         <View className="flex-1 bg-gray-50">
           {/* Header */}
-          <LinearGradient 
-            colors={['#10b981', '#059669']} 
+          <LinearGradient
+            colors={['#10b981', '#059669']}
             style={{ paddingBottom: 32 }}
           >
             <View style={{ paddingTop: 64, paddingBottom: 16, paddingHorizontal: 24 }}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setViewingClass(null)}
                 style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
               >
@@ -310,14 +314,14 @@ const ClassManagementScreen = () => {
               <Text style={{ color: 'white', fontSize: 24, fontWeight: 'bold' }}>{viewingClass.name}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
                 <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14 }}>Code: {viewingClass.code}</Text>
-                <View style={{ 
-                  marginLeft: 16, 
-                  flexDirection: 'row', 
-                  alignItems: 'center', 
-                  backgroundColor: 'rgba(255,255,255,0.2)', 
-                  paddingHorizontal: 12, 
-                  paddingVertical: 4, 
-                  borderRadius: 12 
+                <View style={{
+                  marginLeft: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                  borderRadius: 12
                 }}>
                   <Users size={14} color="white" />
                   <Text style={{ color: 'white', marginLeft: 4, fontWeight: '500', fontSize: 14 }}>
@@ -328,16 +332,16 @@ const ClassManagementScreen = () => {
             </View>
           </LinearGradient>
 
-          <ScrollView 
+          <ScrollView
             style={{ flex: 1, paddingHorizontal: 16, marginTop: -24 }}
             contentContainerStyle={{ paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
           >
             {isLoadingStaff ? (
-              <View style={{ 
-                backgroundColor: 'white', 
-                borderRadius: 16, 
-                padding: 48, 
+              <View style={{
+                backgroundColor: 'white',
+                borderRadius: 16,
+                padding: 48,
                 alignItems: 'center',
                 marginTop: 8,
                 shadowColor: '#000',
@@ -350,10 +354,10 @@ const ClassManagementScreen = () => {
                 <Text style={{ color: '#6b7280', marginTop: 16, fontSize: 14 }}>Loading staff...</Text>
               </View>
             ) : staffList.length === 0 ? (
-              <View style={{ 
-                backgroundColor: 'white', 
-                borderRadius: 16, 
-                padding: 48, 
+              <View style={{
+                backgroundColor: 'white',
+                borderRadius: 16,
+                padding: 48,
                 alignItems: 'center',
                 marginTop: 8,
                 shadowColor: '#000',
@@ -362,12 +366,12 @@ const ClassManagementScreen = () => {
                 shadowRadius: 4,
                 elevation: 2,
               }}>
-                <View style={{ 
-                  width: 80, 
-                  height: 80, 
-                  backgroundColor: '#f3f4f6', 
-                  borderRadius: 40, 
-                  alignItems: 'center', 
+                <View style={{
+                  width: 80,
+                  height: 80,
+                  backgroundColor: '#f3f4f6',
+                  borderRadius: 40,
+                  alignItems: 'center',
                   justifyContent: 'center',
                   marginBottom: 16
                 }}>
@@ -380,7 +384,7 @@ const ClassManagementScreen = () => {
               </View>
             ) : (
               <View style={{ paddingTop: 8 }}>
-                <View style={{ 
+                <View style={{
                   backgroundColor: 'white',
                   paddingHorizontal: 16,
                   paddingVertical: 12,
@@ -432,10 +436,10 @@ const ClassManagementScreen = () => {
                         </Text>
                       </View>
                       <View style={{ alignItems: 'flex-end', marginLeft: 12 }}>
-                        <View style={{ 
-                          backgroundColor: '#ffedd5', 
-                          paddingHorizontal: 10, 
-                          paddingVertical: 5, 
+                        <View style={{
+                          backgroundColor: '#ffedd5',
+                          paddingHorizontal: 10,
+                          paddingVertical: 5,
                           borderRadius: 8,
                           marginBottom: 6
                         }}>
@@ -453,172 +457,173 @@ const ClassManagementScreen = () => {
               </View>
             )}
           </ScrollView>
-          
+
           <BottomNav />
         </View>
       ) : (
         // Original Class Management View
         <View className="flex-1">
-      {/* Header */}
-      <LinearGradient 
-        colors={['#10b981', '#059669']} 
-        className="pb-8"
-      >
-        <View className="pt-16 pb-4 px-6">
-          <Text className="text-white text-2xl font-bold">Class Management</Text>
-          <Text className="text-white/90 mt-1">Create and manage your classes</Text>
-        </View>
-      </LinearGradient>
-
-      <ScrollView className="flex-1 px-4 -mt-6">
-        {/* Create Class Form */}
-        {showCreateForm ? (
-          <View className="bg-white rounded-xl p-5 mb-6 shadow-sm">
-            <Text className="text-lg font-bold text-gray-800 mb-4">Create New Class</Text>
-            
-            <View className="mb-4">
-              <Text className="text-gray-700 mb-2">Class Name *</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3"
-                placeholder="e.g., Advanced Programming"
-                value={className}
-                onChangeText={setClassName}
-              />
-            </View>
-            
-            <View className="mb-4">
-              <Text className="text-gray-700 mb-2">Class Code *</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3"
-                placeholder="e.g., CS301"
-                value={classCode}
-                onChangeText={setClassCode}
-                autoCapitalize="characters"
-              />
-            </View>
-            
-            <View className="mb-4">
-              <Text className="text-gray-700 mb-2">Department (Optional)</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3"
-                placeholder="e.g., Computer Science"
-                value={department}
-                onChangeText={setDepartment}
-              />
-            </View>
-            
-            <View className="mb-4">
-              <Text className="text-gray-700 mb-2">Semester (Optional)</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3"
-                placeholder="e.g., Fall 2024"
-                value={semester}
-                onChangeText={setSemester}
-              />
-            </View>
-            
-            <View className="mb-4">
-              <Text className="text-gray-700 mb-2">Academic Year (Optional)</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3"
-                placeholder="e.g., 2024-2025"
-                value={academicYear}
-                onChangeText={setAcademicYear}
-              />
-            </View>
-            
-            <View className="mb-6">
-              <Text className="text-gray-700 mb-2">Maximum Capacity (Optional)</Text>
-              <TextInput
-                className="border border-gray-300 rounded-lg p-3"
-                placeholder="e.g., 50"
-                value={maxCapacity}
-                onChangeText={setMaxCapacity}
-                keyboardType="numeric"
-              />
-              <Text className="text-gray-500 text-xs mt-1">Leave empty for unlimited capacity</Text>
-            </View>
-            
-            <View className="flex-row">
-              <TouchableOpacity 
-                className="flex-1 bg-gray-200 py-3 rounded-lg items-center mr-2"
-                onPress={() => {
-                  setShowCreateForm(false);
-                  setClassName('');
-                  setClassCode('');
-                  setDepartment('');
-                  setSemester('');
-                  setAcademicYear('');
-                  setMaxCapacity('');
-                }}
-              >
-                <Text className="text-gray-700 font-bold">Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                className="flex-1 bg-green-600 py-3 rounded-lg items-center"
-                onPress={handleCreateClass}
-                disabled={loading}
-              >
-                <Text className="text-white font-bold">
-                  {loading ? 'Creating...' : 'Create Class'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity 
-            className="flex-row items-center bg-white rounded-xl p-4 mb-6 shadow-sm"
-            onPress={() => setShowCreateForm(true)}
+          {/* Header */}
+          <LinearGradient
+            colors={['#10b981', '#059669']}
+            className="pb-8"
           >
-            <View className="w-10 h-10 rounded-full bg-green-100 items-center justify-center">
-              <Plus size={20} color="#10b981" />
+            <View className="pt-16 pb-4 px-6">
+              <Text className="text-white text-2xl font-bold">Class Management</Text>
+              <Text className="text-white/90 mt-1">Create and manage your classes</Text>
             </View>
-            <Text className="ml-3 text-gray-800 font-bold">Create New Class</Text>
-          </TouchableOpacity>
-        )}
-        
-        <View className="mb-4">
-          <View className="flex-row items-center bg-white rounded-xl px-4 py-3 mb-4">
-            <Search size={20} color="#64748b" />
-            <TextInput
-              className="flex-1 ml-2 text-gray-800"
-              placeholder="Search classes..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-          
-          <Text className="text-lg font-bold text-gray-800 mb-3">Your Classes</Text>
-          
-          {classes.length > 0 ? (
-            <FlatList
-              data={classes}
-              keyExtractor={(item) => item.id}
-              renderItem={renderClassItem}
-              scrollEnabled={false}
-              showsVerticalScrollIndicator={false}
-            />
-          ) : (
-            <View className="bg-white rounded-xl p-8 items-center">
-              <BookOpen size={48} color="#d1d5db" />
-              <Text className="text-gray-900 font-bold text-lg mt-4">No Classes Yet</Text>
-              <Text className="text-gray-500 text-center mt-2">
-                Create your first class to start managing work requests and tracking CRED points
-              </Text>
+          </LinearGradient>
+
+          <ScrollView className="flex-1 px-4 -mt-6">
+            {/* Create Class Form */}
+            {showCreateForm ? (
+              <View className="bg-white rounded-xl p-5 mb-6 shadow-sm">
+                <Text className="text-lg font-bold text-gray-800 mb-4">Create New Class</Text>
+
+                <View className="mb-4">
+                  <Text className="text-gray-700 mb-2">Class Name *</Text>
+                  <TextInput
+                    className="border border-gray-300 rounded-lg p-3"
+                    placeholder="e.g., Advanced Programming"
+                    value={className}
+                    onChangeText={setClassName}
+                  />
+                </View>
+
+                <View className="mb-4">
+                  <Text className="text-gray-700 mb-2">Class Code *</Text>
+                  <TextInput
+                    className="border border-gray-300 rounded-lg p-3"
+                    placeholder="e.g., CS301"
+                    value={classCode}
+                    onChangeText={setClassCode}
+                    autoCapitalize="characters"
+                  />
+                </View>
+
+                <View className="mb-4">
+                  <Text className="text-gray-700 mb-2">Department (Optional)</Text>
+                  <TextInput
+                    className="border border-gray-300 rounded-lg p-3"
+                    placeholder="e.g., Computer Science"
+                    value={department}
+                    onChangeText={setDepartment}
+                  />
+                </View>
+
+                <View className="mb-4">
+                  <Text className="text-gray-700 mb-2">Semester (Optional)</Text>
+                  <TextInput
+                    className="border border-gray-300 rounded-lg p-3"
+                    placeholder="e.g., Fall 2024"
+                    value={semester}
+                    onChangeText={setSemester}
+                  />
+                </View>
+
+                <View className="mb-4">
+                  <Text className="text-gray-700 mb-2">Academic Year (Optional)</Text>
+                  <TextInput
+                    className="border border-gray-300 rounded-lg p-3"
+                    placeholder="e.g., 2024-2025"
+                    value={academicYear}
+                    onChangeText={setAcademicYear}
+                  />
+                </View>
+
+                <View className="mb-6">
+                  <Text className="text-gray-700 mb-2">Maximum Capacity (Optional)</Text>
+                  <TextInput
+                    className="border border-gray-300 rounded-lg p-3"
+                    placeholder="e.g., 50"
+                    value={maxCapacity}
+                    onChangeText={setMaxCapacity}
+                    keyboardType="numeric"
+                  />
+                  <Text className="text-gray-500 text-xs mt-1">Leave empty for unlimited capacity</Text>
+                </View>
+
+                <View className="flex-row">
+                  <TouchableOpacity
+                    className="flex-1 bg-gray-200 py-3 rounded-lg items-center mr-2"
+                    onPress={() => {
+                      setShowCreateForm(false);
+                      setClassName('');
+                      setClassCode('');
+                      setDepartment('');
+                      setSemester('');
+                      setAcademicYear('');
+                      setMaxCapacity('');
+                    }}
+                  >
+                    <Text className="text-gray-700 font-bold">Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    className="flex-1 bg-green-600 py-3 rounded-lg items-center"
+                    onPress={handleCreateClass}
+                    disabled={loading}
+                  >
+                    <Text className="text-white font-bold">
+                      {loading ? 'Creating...' : 'Create Class'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                className="flex-row items-center bg-white rounded-xl p-4 mb-6 shadow-sm"
+                onPress={() => setShowCreateForm(true)}
+              >
+                <View className="w-10 h-10 rounded-full bg-green-100 items-center justify-center">
+                  <Plus size={20} color="#10b981" />
+                </View>
+                <Text className="ml-3 text-gray-800 font-bold">Create New Class</Text>
+              </TouchableOpacity>
+            )}
+
+            <View className="mb-4">
+              <View className="flex-row items-center bg-white rounded-xl px-4 py-3 mb-4">
+                <Search size={20} color="#64748b" />
+                <TextInput
+                  className="flex-1 ml-2 text-gray-800"
+                  placeholder="Search classes..."
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+
+              <Text className="text-lg font-bold text-gray-800 mb-3">Your Classes</Text>
+
+              {classes.length > 0 ? (
+                <FlatList
+                  data={classes}
+                  keyExtractor={(item) => item.id}
+                  renderItem={renderClassItem}
+                  scrollEnabled={false}
+                  showsVerticalScrollIndicator={false}
+                />
+              ) : (
+                <View className="bg-white rounded-xl p-8 items-center">
+                  <BookOpen size={48} color="#d1d5db" />
+                  <Text className="text-gray-900 font-bold text-lg mt-4">No Classes Yet</Text>
+                  <Text className="text-gray-500 text-center mt-2">
+                    Create your first class to start managing work requests and tracking CRED points
+                  </Text>
+                </View>
+              )}
             </View>
-          )}
-        </View>
-      </ScrollView>
-      
+          </ScrollView>
+
       {/* Delete Confirmation Modal */}
-      <DeleteClassModal
-        visible={showDeleteModal}
-        className={classToDelete?.class_name || ''}
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-      />
-      
+      {showDeleteModal && classToDelete && (
+        <DeleteClassModal
+          visible={showDeleteModal}
+          targetClassName={classToDelete.class_name}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
+      )}
       <BottomNav />
         </View>
       )}
