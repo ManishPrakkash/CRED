@@ -1,5 +1,6 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
+import { getStaffCredPoints } from '@/services/supabaseClasses';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
@@ -12,17 +13,38 @@ import {
     Plus,
     TrendingUp
 } from 'lucide-react-native';
-import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
 export default function StudentDashboard() {
   const router = useRouter();
   const { user, unreadCount } = useAuth();
+  const [credPoints, setCredPoints] = useState<number>(0);
+  const [isLoadingPoints, setIsLoadingPoints] = useState(true);
   
   const currentClass = user?.joinedClasses?.find(c => c.class_id === user.currentClassId);
 
+  // Fetch CRED points on mount and when user changes
+  useEffect(() => {
+    const fetchPoints = async () => {
+      if (user?.id && user.role === 'staff') {
+        setIsLoadingPoints(true);
+        const points = await getStaffCredPoints(user.id);
+        setCredPoints(points);
+        setIsLoadingPoints(false);
+      }
+    };
+
+    fetchPoints();
+
+    // Refresh points every 30 seconds
+    const interval = setInterval(fetchPoints, 30000);
+
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
   const staffStats = [
-    { title: 'Total Points', value: '850', icon: <Award size={20} color="#f59e0b" />, color: 'bg-orange-50' },
+    { title: 'Total Points', value: credPoints.toString(), icon: <Award size={20} color="#f59e0b" />, color: 'bg-orange-50' },
     { title: 'This Month', value: '+120', icon: <TrendingUp size={20} color="#10b981" />, color: 'bg-green-50' },
     { title: 'Pending Requests', value: '3', icon: <Clock size={20} color="#2563eb" />, color: 'bg-blue-50' },
   ];
@@ -84,7 +106,11 @@ export default function StudentDashboard() {
           <View className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30">
             <Award size={16} color="rgba(255,255,255,0.9)" />
             <Text className="text-white/90 text-xs font-medium mt-1">POINTS</Text>
-            <Text className="text-white text-xl font-bold mt-0.5">850</Text>
+            {isLoadingPoints ? (
+              <ActivityIndicator size="small" color="white" style={{ marginTop: 2 }} />
+            ) : (
+              <Text className="text-white text-xl font-bold mt-0.5">{credPoints}</Text>
+            )}
           </View>
         </View>
       </LinearGradient>
@@ -222,7 +248,7 @@ export default function StudentDashboard() {
           <View className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30">
             <Award size={16} color="rgba(255,255,255,0.9)" />
             <Text className="text-white/90 text-xs font-medium mt-1">POINTS</Text>
-            <Text className="text-white text-sm font-bold mt-0.5">850</Text>
+            <Text className="text-white text-sm font-bold mt-0.5">{credPoints}</Text>
           </View>
         </View>
       </LinearGradient> */}
@@ -345,7 +371,7 @@ export default function StudentDashboard() {
           <View className="space-y-3">
             <View className="flex-row items-center justify-between py-2">
               <Text className="text-gray-600">Total Earned</Text>
-              <Text className="text-gray-900 font-bold">850 points</Text>
+              <Text className="text-gray-900 font-bold">{credPoints} points</Text>
             </View>
             <View className="flex-row items-center justify-between py-2 border-t border-gray-100">
               <Text className="text-gray-600">Approved Requests</Text>
