@@ -1,6 +1,6 @@
 import type { User, JoinedClass, Notification } from '@/lib/types';
 import { loginWithSupabase } from '@/services/supabaseAuth';
-import { joinClassByCode as joinClassService, getStaffClasses, validateAndCleanJoinedClasses } from '@/services/supabaseClasses';
+import { joinClassByCode as joinClassService, getStaffClasses, validateAndCleanJoinedClasses, leaveClass as leaveClassService } from '@/services/supabaseClasses';
 import { NotificationService } from '@/services/notificationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useState, useEffect } from 'react';
@@ -13,6 +13,7 @@ interface AuthContextType {
   joinClass: (joinCode: string) => Promise<void>;
   switchClass: (classId: string) => void;
   deleteClass: (classId: string) => void;
+  leaveClass: (classId: string) => Promise<void>;
   refreshJoinedClasses: () => Promise<void>;
   hasJoinedClasses: boolean;
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void;
@@ -174,6 +175,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updatedUser);
   };
 
+  const leaveClass = async (classId: string) => {
+    if (!user || user.role !== 'staff') {
+      throw new Error('Only staff can leave classes');
+    }
+
+    // Use Supabase service to leave class
+    const result = await leaveClassService(user.id, classId);
+    
+    if (!result.success) {
+      throw new Error(result.message);
+    }
+
+    // Refresh user's joined classes from database
+    await refreshJoinedClasses();
+  };
+
   const addNotification = (notification: Omit<Notification, 'id' | 'createdAt'>) => {
     if (!user) return;
 
@@ -234,6 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       joinClass, 
       switchClass, 
       deleteClass,
+      leaveClass,
       refreshJoinedClasses,
       hasJoinedClasses,
       addNotification,
