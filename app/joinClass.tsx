@@ -13,7 +13,14 @@ export default function JoinClassScreen() {
   const [joinCode, setJoinCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [classToLeave, setClassToLeave] = useState<{ id: string; name: string } | null>(null);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
+  // Open leave modal only after classToLeave state is set
+  useEffect(() => {
+    if (classToLeave) {
+      setShowLeaveModal(true);
+    }
+  }, [classToLeave]);
 
   const handleJoinClass = async () => {
     if (!joinCode.trim()) {
@@ -37,7 +44,7 @@ export default function JoinClassScreen() {
     // Check if class still exists in database
     const { validClasses } = await validateAndCleanJoinedClasses(user!.id);
     const classStillExists = validClasses.some((jc) => jc.class_id === classId);
-    
+
     if (!classStillExists) {
       Alert.alert(
         'Class Not Available',
@@ -48,7 +55,7 @@ export default function JoinClassScreen() {
       await refreshJoinedClasses();
       return;
     }
-    
+
     switchClass(classId);
     router.replace('/');
   };
@@ -62,7 +69,9 @@ export default function JoinClassScreen() {
         {
           text: 'Continue',
           style: 'default',
-          onPress: () => setClassToLeave({ id: classId, name: className }),
+          onPress: () => {
+            setClassToLeave({ id: classId, name: className });
+          },
         },
       ]
     );
@@ -72,6 +81,7 @@ export default function JoinClassScreen() {
     if (classToLeave) {
       try {
         await leaveClass(classToLeave.id);
+        setShowLeaveModal(false);
         setClassToLeave(null);
         Alert.alert('Success', `You have left ${classToLeave.name}. You can rejoin anytime if needed.`);
       } catch (error: any) {
@@ -81,14 +91,15 @@ export default function JoinClassScreen() {
   };
 
   const cancelLeave = () => {
+    setShowLeaveModal(false);
     setClassToLeave(null);
   };
 
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <LinearGradient 
-        colors={['#f59e0b', '#f97316']} 
+      <LinearGradient
+        colors={['#f59e0b', '#f97316']}
         className="pt-14 pb-8 px-6"
       >
         <Text className="text-white text-3xl font-bold mt-2">My Classes</Text>
@@ -107,7 +118,7 @@ export default function JoinClassScreen() {
               <Text className="text-gray-500 text-sm">Enter the class code provided by your HOD</Text>
             </View>
           </View>
-          
+
           <View className="mb-5">
             <Text className="text-gray-700 font-medium mb-2">Class Code</Text>
             <TextInput
@@ -121,7 +132,7 @@ export default function JoinClassScreen() {
               maxLength={10}
             />
           </View>
-          
+
           <TouchableOpacity
             className={`py-3.5 rounded-lg items-center justify-center ${isJoining ? 'bg-orange-400' : 'bg-orange-600'} shadow-sm`}
             onPress={handleJoinClass}
@@ -143,45 +154,43 @@ export default function JoinClassScreen() {
                 <Text className="text-orange-700 font-semibold text-xs">{user.joinedClasses.length} {user.joinedClasses.length === 1 ? 'class' : 'classes'}</Text>
               </View>
             </View>
-            
+
             {user.joinedClasses.map((joinedClass, index) => (
               <View
                 key={joinedClass.class_id}
-                className={`bg-white rounded-xl p-4 mb-3 shadow-sm border ${
-                  user.currentClassId === joinedClass.class_id ? 'border-orange-500 border-2' : 'border-gray-200'
-                }`}
+                className={`bg-white rounded-xl p-4 mb-3 shadow-sm border ${user.currentClassId === joinedClass.class_id ? 'border-orange-500 border-2' : 'border-gray-200'
+                  }`}
               >
                 <TouchableOpacity
                   onPress={() => handleSelectClass(joinedClass.class_id)}
                   activeOpacity={0.7}
                 >
                   <View className="flex-row items-center">
-                    <View className={`w-11 h-11 rounded-lg items-center justify-center ${
-                      user.currentClassId === joinedClass.class_id ? 'bg-orange-100' : 'bg-gray-100'
-                    }`}>
+                    <View className={`w-11 h-11 rounded-lg items-center justify-center ${user.currentClassId === joinedClass.class_id ? 'bg-orange-100' : 'bg-gray-100'
+                      }`}>
                       <BookOpen size={20} color={user.currentClassId === joinedClass.class_id ? '#f59e0b' : '#6b7280'} />
                     </View>
-                  <View className="ml-3 flex-1">
-                    <View className="flex-row items-center mb-1">
-                      <Text className="text-gray-900 font-semibold text-base">{joinedClass.class_name}</Text>
-                      {user.currentClassId === joinedClass.class_id && (
-                        <View className="ml-2 bg-green-100 px-2 py-0.5 rounded">
-                          <Text className="text-green-700 font-semibold text-xs">Active</Text>
-                        </View>
-                      )}
+                    <View className="ml-3 flex-1">
+                      <View className="flex-row items-center mb-1">
+                        <Text className="text-gray-900 font-semibold text-base">{joinedClass.class_name}</Text>
+                        {user.currentClassId === joinedClass.class_id && (
+                          <View className="ml-2 bg-green-100 px-2 py-0.5 rounded">
+                            <Text className="text-green-700 font-semibold text-xs">Active</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text className="text-gray-500 text-sm">Code: {joinedClass.class_code}</Text>
+                      <Text className="text-gray-400 text-xs mt-1">
+                        Joined {new Date(joinedClass.joined_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </Text>
                     </View>
-                    <Text className="text-gray-500 text-sm">Code: {joinedClass.class_code}</Text>
-                    <Text className="text-gray-400 text-xs mt-1">
-                      Joined {new Date(joinedClass.joined_at).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
-                    </Text>
-                  </View>
                   </View>
                 </TouchableOpacity>
-                
+
                 {/* Leave Button */}
                 <TouchableOpacity
                   onPress={() => handleLeaveClass(joinedClass.class_id, joinedClass.class_name)}
@@ -197,12 +206,14 @@ export default function JoinClassScreen() {
       </ScrollView>
 
       {/* Leave Class Modal */}
-      <LeaveClassModal
-        visible={classToLeave !== null}
-        className={classToLeave?.name || ''}
-        onConfirm={confirmLeave}
-        onCancel={cancelLeave}
-      />
+      {showLeaveModal && classToLeave && (
+        <LeaveClassModal
+          visible={showLeaveModal}
+          targetClassName={classToLeave.name}
+          onConfirm={confirmLeave}
+          onCancel={cancelLeave}
+        />
+      )}
     </View>
   );
 }
