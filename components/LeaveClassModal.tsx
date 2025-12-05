@@ -3,12 +3,12 @@ import { Modal, View, Text, TextInput, TouchableOpacity, Alert } from 'react-nat
 
 interface LeaveClassModalProps {
   visible: boolean;
-  className: string;
+  targetClassName: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export default function LeaveClassModal({ visible, className, onConfirm, onCancel }: LeaveClassModalProps) {
+export default function LeaveClassModal({ visible, targetClassName, onConfirm, onCancel }: LeaveClassModalProps) {
   const [inputText, setInputText] = useState('');
   const [showError, setShowError] = useState(false);
 
@@ -20,10 +20,10 @@ export default function LeaveClassModal({ visible, className, onConfirm, onCance
     }
   }, [visible]);
 
-  const leavePhrase = `leave ${className}`;
+  const leavePhrase = `leave ${targetClassName}`;
 
   const handleConfirm = () => {
-    if (inputText.trim() === leavePhrase) {
+    if (targetClassName && targetClassName.trim() !== '' && inputText.trim() === leavePhrase) {
       onConfirm();
       setInputText('');
       setShowError(false);
@@ -38,7 +38,7 @@ export default function LeaveClassModal({ visible, className, onConfirm, onCance
     onCancel();
   };
 
-  const isValid = inputText.trim() === leavePhrase;
+  const isValid = targetClassName && targetClassName.trim() !== '' && inputText.trim() === leavePhrase;
 
   return (
     <Modal
@@ -67,7 +67,7 @@ export default function LeaveClassModal({ visible, className, onConfirm, onCance
             <Text className="text-gray-700 text-sm mb-2">
               To confirm, please type:
             </Text>
-            <Text className="text-yellow-700 font-mono font-bold text-base">
+            <Text className="text-yellow-700 font-mono font-bold text-lg" numberOfLines={2}>
               {leavePhrase}
             </Text>
           </View>
