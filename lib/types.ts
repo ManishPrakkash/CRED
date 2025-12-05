@@ -32,6 +32,7 @@ export interface JoinedClass {
   class_id: string;
   class_code: string;
   class_name: string;
+  advisor_name: string;
   joined_at: string;
 }
 

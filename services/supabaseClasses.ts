@@ -124,10 +124,17 @@ export const joinClassByCode = async (
   classCode: string
 ): Promise<{ success: boolean; class?: Class; message: string }> => {
   try {
-    // 1. Find the class by code
-    const classData = await getClassByCode(classCode);
+    // 1. Find the class by code and fetch advisor name
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select(`
+        *,
+        users!classes_advisor_id_fkey(name)
+      `)
+      .eq('class_code', classCode)
+      .single();
     
-    if (!classData) {
+    if (classError || !classData) {
       return {
         success: false,
         message: 'Class not found. Please check the class code.',
@@ -175,6 +182,7 @@ export const joinClassByCode = async (
       class_id: classData.id,
       class_code: classData.class_code,
       class_name: classData.class_name,
+      advisor_name: (classData.users as any)?.name || 'Unknown',
       joined_at: new Date().toISOString(),
     };
 
@@ -216,7 +224,7 @@ export const joinClassByCode = async (
 };
 
 /**
- * Get all classes a staff member has joined
+ * Get all classes a staff member has joined with advisor names
  * @param staffId - The staff user ID
  */
 export const getStaffClasses = async (staffId: string): Promise<JoinedClass[]> => {
@@ -232,7 +240,46 @@ export const getStaffClasses = async (staffId: string): Promise<JoinedClass[]> =
       throw new Error(error.message || 'Failed to fetch joined classes');
     }
 
-    return (data?.joined_classes || []) as JoinedClass[];
+    const joinedClasses = (data?.joined_classes || []) as JoinedClass[];
+    
+    // Fetch advisor names for classes that don't have them
+    const classesNeedingAdvisor = joinedClasses.filter(jc => !jc.advisor_name);
+    
+    if (classesNeedingAdvisor.length > 0) {
+      const classIds = classesNeedingAdvisor.map(jc => jc.class_id);
+      
+      const { data: classesData } = await supabase
+        .from('classes')
+        .select(`
+          id,
+          users!classes_advisor_id_fkey(name)
+        `)
+        .in('id', classIds);
+      
+      if (classesData) {
+        // Update joined classes with advisor names
+        const updatedJoinedClasses = joinedClasses.map(jc => {
+          const classInfo = classesData.find(c => c.id === jc.class_id);
+          if (classInfo && !jc.advisor_name) {
+            return {
+              ...jc,
+              advisor_name: (classInfo.users as any)?.name || 'Unknown',
+            };
+          }
+          return jc;
+        });
+        
+        // Update database with advisor names
+        await supabase
+          .from('users')
+          .update({ joined_classes: updatedJoinedClasses })
+          .eq('id', staffId);
+        
+        return updatedJoinedClasses;
+      }
+    }
+
+    return joinedClasses;
   } catch (error: any) {
     console.error('Get staff classes error:', error);
     throw new Error(error.message || 'Failed to fetch joined classes');
