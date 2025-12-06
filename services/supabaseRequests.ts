@@ -8,6 +8,8 @@ export interface CreateRequestParams {
   class_id?: string;
   work_description: string;
   requested_points: number;
+  target_staff_id?: string;
+  is_peer_request?: boolean;
 }
 
 export interface RequestFilters {
@@ -30,6 +32,8 @@ export interface Request {
   staff_id: string;
   advisor_id: string;
   class_id: string | null;
+  target_staff_id: string | null;
+  is_peer_request: boolean;
   work_description: string;
   requested_points: number;
   status: 'pending' | 'approved' | 'rejected' | 'correction';
@@ -55,6 +59,8 @@ export const createRequest = async (params: CreateRequestParams) => {
         class_id: params.class_id || null,
         work_description: params.work_description,
         requested_points: params.requested_points,
+        target_staff_id: params.target_staff_id || params.staff_id,
+        is_peer_request: params.is_peer_request || false,
         status: 'pending'
       })
       .select()
@@ -115,6 +121,12 @@ export const getAdvisorPendingRequests = async (advisorId: string) => {
           name,
           email,
           employee_id
+        ),
+        target_staff:target_staff_id (
+          id,
+          name,
+          email,
+          employee_id
         )
       `)
       .eq('advisor_id', advisorId)
@@ -146,6 +158,12 @@ export const getAdvisorRequests = async (advisorId: string) => {
       .select(`
         *,
         staff:staff_id (
+          id,
+          name,
+          email,
+          employee_id
+        ),
+        target_staff:target_staff_id (
           id,
           name,
           email,
@@ -403,8 +421,13 @@ export const approveRequest = async (
     }
 
     // Update staff CRED points (creates credit/debit activity)
+    // For peer requests, use target_staff_id; otherwise use staff_id
+    const staffToUpdate = request.is_peer_request && request.target_staff_id 
+      ? request.target_staff_id 
+      : request.staff_id;
+    
     const pointsResult = await updateStaffCredPoints(
-      request.staff_id,
+      staffToUpdate,
       approvedPoints,
       requestId,
       request.work_description,
