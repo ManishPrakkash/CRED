@@ -18,8 +18,8 @@ export default function Notifications() {
     }, [user?.role, user?.currentClassId, router])
   );
 
-  // Filter out read notifications - only show unread ones
-  const notifications = (user?.notifications || []).filter(n => !n.read);
+  // Show all notifications (both read and unread)
+  const notifications = user?.notifications || [];
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
