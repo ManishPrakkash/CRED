@@ -7,14 +7,15 @@ import {
   BookOpen,
   ClipboardList,
   Users,
-  Trophy
+  Trophy,
+  Bell
 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function AdvisorDashboard() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, unreadCount } = useAuth();
   const { classes, getTotalStats } = useClasses();
 
   const stats = getTotalStats();
@@ -38,6 +39,17 @@ export default function AdvisorDashboard() {
             <Text className="text-white text-sm opacity-90">Advisor Dashboard</Text>
             <Text className="text-white text-2xl font-bold mt-1">{user?.name}</Text>
           </View>
+          <TouchableOpacity 
+            className="p-2 bg-white/20 rounded-lg relative"
+            onPress={() => router.push('/notifications')}
+          >
+            <Bell size={18} color="white" />
+            {unreadCount > 0 && (
+              <View className="absolute -top-1 -right-1 bg-red-500 rounded-full min-w-[18px] h-[18px] items-center justify-center px-1">
+                <Text className="text-white text-xs font-bold">{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </LinearGradient>
 
