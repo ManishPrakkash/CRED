@@ -10,21 +10,38 @@ import {
   Trophy,
   Bell
 } from 'lucide-react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { getAdvisorPendingRequests } from '@/services/supabaseRequests';
 
 export default function AdvisorDashboard() {
   const router = useRouter();
   const { user, unreadCount } = useAuth();
   const { classes, getTotalStats } = useClasses();
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   const stats = getTotalStats();
-  const pendingRequests: any[] = []; // TODO: Will be populated from requests table later
+
+  useEffect(() => {
+    const fetchPendingRequests = async () => {
+      if (user?.id) {
+        try {
+          const requests = await getAdvisorPendingRequests(user.id);
+          setPendingRequestsCount(requests?.length || 0);
+        } catch (error) {
+          console.error('Failed to fetch pending requests:', error);
+          setPendingRequestsCount(0);
+        }
+      }
+    };
+
+    fetchPendingRequests();
+  }, [user?.id]);
 
   const advisorStats = [
     { title: 'Active Classes', value: stats.totalClasses.toString(), icon: <BookOpen size={20} color="#2563eb" />, color: 'bg-blue-50' },
     { title: 'Total Staff', value: stats.totalStaff.toString(), icon: <Users size={20} color="#10b981" />, color: 'bg-green-50' },
-    { title: 'Pending Requests', value: pendingRequests.length.toString(), icon: <ClipboardList size={20} color="#10b981" />, color: 'bg-green-50' },
+    { title: 'Pending Requests', value: pendingRequestsCount.toString(), icon: <ClipboardList size={20} color="#10b981" />, color: 'bg-green-50' },
   ];
 
   return (
@@ -83,7 +100,7 @@ export default function AdvisorDashboard() {
               </View>
               <View className="flex-1 ml-3">
                 <Text className="text-blue-900 font-semibold text-sm">Review Requests</Text>
-                <Text className="text-blue-600 text-xs mt-0.5">{pendingRequests.length} pending</Text>
+                <Text className="text-blue-600 text-xs mt-0.5">{pendingRequestsCount} pending</Text>
               </View>
             </TouchableOpacity>
 
