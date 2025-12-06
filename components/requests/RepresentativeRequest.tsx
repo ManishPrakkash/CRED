@@ -103,7 +103,8 @@ export default function StaffRequest() {
   const handleEditCorrectionRequest = (request: Request) => {
     setEditingRequestId(request.id);
     setWorkDescription(request.work_description);
-    setRequestedPoints(request.requested_points.toString());
+    setRequestedPoints(Math.abs(request.requested_points).toString());
+    setPointsType(request.requested_points >= 0 ? 'add' : 'subtract');
     setShowSubmitForm(true);
   };
 
@@ -114,18 +115,31 @@ export default function StaffRequest() {
     }
 
     const points = parseInt(requestedPoints);
-    if (isNaN(points) || points <= 0) {
-      Alert.alert('Invalid Points', 'Please enter a valid positive number');
+    if (isNaN(points) || points === 0) {
+      Alert.alert('Invalid Points', 'Points cannot be zero');
+      return;
+    }
+
+    // Validate based on selected point type
+    if (pointsType === 'add' && points < 0) {
+      Alert.alert('Invalid Points', 'Please enter a positive number when adding points');
+      return;
+    }
+    
+    if (pointsType === 'subtract' && points > 0) {
+      Alert.alert('Invalid Points', 'Please enter a negative number when deducting points');
       return;
     }
 
     try {
       setIsSubmitting(true);
 
+      const pointsValue = points; // Points already have correct sign based on validation
+
       const result = await updateAndResubmitRequest(
         editingRequestId,
         workDescription,
-        points
+        pointsValue
       );
 
       if (!result.success) {
@@ -135,11 +149,12 @@ export default function StaffRequest() {
 
       Alert.alert(
         'Success',
-        `Request updated and resubmitted: ${requestedPoints} points\nYour request will be reviewed again by the HOD.`
+        `Request updated and resubmitted: ${pointsType === 'add' ? '+' : '-'}${requestedPoints} points\nYour request will be reviewed again by the HOD.`
       );
       
       setWorkDescription('');
       setRequestedPoints('');
+      setPointsType('add');
       setShowSubmitForm(false);
       setEditingRequestId(null);
       
@@ -217,8 +232,19 @@ export default function StaffRequest() {
     }
 
     const points = parseInt(requestedPoints);
-    if (isNaN(points) || points <= 0) {
-      Alert.alert('Invalid Points', 'Please enter a valid positive number');
+    if (isNaN(points) || points === 0) {
+      Alert.alert('Invalid Points', 'Points cannot be zero');
+      return;
+    }
+
+    // Validate based on selected point type
+    if (pointsType === 'add' && points < 0) {
+      Alert.alert('Invalid Points', 'Please enter a positive number when adding points');
+      return;
+    }
+    
+    if (pointsType === 'subtract' && points > 0) {
+      Alert.alert('Invalid Points', 'Please enter a negative number when deducting points');
       return;
     }
 
@@ -244,7 +270,7 @@ export default function StaffRequest() {
 
       const isPeerRequest = selectedClassmate !== null;
       const targetStaffId = isPeerRequest ? selectedClassmate.id : user.id;
-      const pointsValue = pointsType === 'subtract' ? -points : points;
+      const pointsValue = points; // Points already have correct sign based on validation
 
       // Create request in database
       const result = await createRequest({
@@ -340,12 +366,22 @@ export default function StaffRequest() {
     const date = createdDate.toLocaleDateString();
     const time = createdDate.toLocaleTimeString();
     const respondedDate = item.responded_at ? new Date(item.responded_at).toLocaleDateString() : null;
+    const isPeerRequest = item.is_peer_request && item.target_staff_id;
+    const targetStaff = (item as any).target_staff;
     
     return (
       <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
         <View className="flex-row items-start justify-between mb-3">
           <View className="flex-1">
             <Text className="text-gray-500 text-xs mb-1">{date} • {time}</Text>
+            {isPeerRequest && targetStaff && (
+              <View className="flex-row items-center mt-1">
+                <Users size={14} color="#10b981" />
+                <Text className="text-green-600 text-xs font-medium ml-1">
+                  Peer Request for {targetStaff.name}
+                </Text>
+              </View>
+            )}
           </View>
           <View className={`px-3 py-1 rounded-full ${statusColors.bg} border ${statusColors.border}`}>
             <Text className={`text-xs font-bold ${statusColors.text} capitalize`}>{item.status}</Text>
@@ -494,34 +530,46 @@ export default function StaffRequest() {
               </View>
             )}
 
-            {/* Point Type Selection (always show for new requests) */}
-            {!editingRequestId && (
-              <View className="mb-4">
-                <Text className="text-gray-700 font-medium mb-2">Point Type *</Text>
-                <View className="flex-row gap-3">
-                  <TouchableOpacity
-                    className={`flex-1 py-3 rounded-lg border-2 items-center ${
-                      pointsType === 'add' ? 'bg-green-50 border-green-500' : 'border-gray-300'
-                    }`}
-                    onPress={() => setPointsType('add')}
-                  >
-                    <Text className={`font-bold ${pointsType === 'add' ? 'text-green-700' : 'text-gray-600'}`}>
-                      + Add Points
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    className={`flex-1 py-3 rounded-lg border-2 items-center ${
-                      pointsType === 'subtract' ? 'bg-red-50 border-red-500' : 'border-gray-300'
-                    }`}
-                    onPress={() => setPointsType('subtract')}
-                  >
-                    <Text className={`font-bold ${pointsType === 'subtract' ? 'text-red-700' : 'text-gray-600'}`}>
-                      - Deduct Points
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+            {/* Point Type Selection (show for all requests) */}
+            <View className="mb-4">
+              <Text className="text-gray-700 font-medium mb-2">Point Type *</Text>
+              <View className="flex-row gap-3">
+                <TouchableOpacity
+                  className={`flex-1 py-3 rounded-lg border-2 items-center ${
+                    pointsType === 'add' ? 'bg-green-50 border-green-500' : 'border-gray-300'
+                  }`}
+                  onPress={() => {
+                    setPointsType('add');
+                    // Remove minus sign if present
+                    if (requestedPoints.startsWith('-')) {
+                      setRequestedPoints(requestedPoints.substring(1));
+                    }
+                  }}
+                >
+                  <Text className={`font-bold ${pointsType === 'add' ? 'text-green-700' : 'text-gray-600'}`}>
+                    + Add Points
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className={`flex-1 py-3 rounded-lg border-2 items-center ${
+                    pointsType === 'subtract' ? 'bg-red-50 border-red-500' : 'border-gray-300'
+                  }`}
+                  onPress={() => {
+                    setPointsType('subtract');
+                    // Add minus sign if not present
+                    if (requestedPoints && !requestedPoints.startsWith('-')) {
+                      setRequestedPoints('-' + requestedPoints);
+                    } else if (!requestedPoints) {
+                      setRequestedPoints('-');
+                    }
+                  }}
+                >
+                  <Text className={`font-bold ${pointsType === 'subtract' ? 'text-red-700' : 'text-gray-600'}`}>
+                    - Deduct Points
+                  </Text>
+                </TouchableOpacity>
               </View>
-            )}
+            </View>
 
             <View className="mb-4">
               <Text className="text-gray-700 font-medium mb-2">Work Description *</Text>
@@ -538,10 +586,24 @@ export default function StaffRequest() {
               <Text className="text-gray-700 font-medium mb-2">Requested CredPoints *</Text>
               <TextInput
                 className="border border-gray-300 rounded-lg p-3"
-                placeholder="Enter points (e.g., 30, 50)"
+                placeholder={pointsType === 'subtract' ? "Enter points (e.g., -30, -50)" : "Enter points (e.g., 30, 50)"}
                 keyboardType="numeric"
                 value={requestedPoints}
-                onChangeText={setRequestedPoints}
+                onChangeText={(text) => {
+                  if (pointsType === 'subtract') {
+                    // Ensure minus sign is always at the start for subtract
+                    if (text === '' || text === '-') {
+                      setRequestedPoints('-');
+                    } else if (!text.startsWith('-')) {
+                      setRequestedPoints('-' + text.replace(/[^0-9]/g, ''));
+                    } else {
+                      setRequestedPoints('-' + text.substring(1).replace(/[^0-9]/g, ''));
+                    }
+                  } else {
+                    // For add, remove any minus signs
+                    setRequestedPoints(text.replace(/[^0-9]/g, ''));
+                  }
+                }}
               />
               {selectedClassmate && (
                 <Text className="text-xs text-gray-500 mt-1">
