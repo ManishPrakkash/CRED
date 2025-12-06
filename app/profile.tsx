@@ -39,8 +39,23 @@ export default function ProfileScreen() {
         colors={isAdvisor ? ['#f59e0b', '#f97316'] : ['#2563eb', '#3b82f6']} 
         className="pt-12 pb-8 px-6 rounded-b-3xl"
       >
-        <Text className="text-2xl font-bold text-white">Profile</Text>
-        <Text className="text-white/90 mt-1">Manage your account settings</Text>
+        <View className="flex-row items-center">
+          {/* Back button - only show when staff has no classes */}
+          {hasNoClasses && (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mr-3"
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
+          
+          <View className="flex-1">
+            <Text className="text-2xl font-bold text-white">Profile</Text>
+            <Text className="text-white/90 mt-1">Manage your account settings</Text>
+          </View>
+        </View>
       </LinearGradient>
 
       <ScrollView className="flex-1 px-4 py-6">
@@ -97,23 +112,6 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Join Class Button (if staff) */}
-        {user?.role === 'staff' && (
-          <TouchableOpacity
-            onPress={() => setShowJoinClassModal(true)}
-            className="bg-white rounded-xl p-5 mb-6 shadow-sm flex-row items-center"
-          >
-            <View className="w-12 h-12 rounded-full bg-blue-50 items-center justify-center">
-              <Plus size={24} color="#2563eb" />
-            </View>
-            <View className="flex-1 ml-4">
-              <Text className="text-lg font-bold text-gray-800">Join a Class</Text>
-              <Text className="text-gray-500 text-sm">Enter class code to join</Text>
-            </View>
-            <BookOpen size={24} color="#6b7280" />
-          </TouchableOpacity>
-        )}
-
         {/* Account Settings */}
         <View className="bg-white rounded-xl mb-6 shadow-sm overflow-hidden">
           <Text className="text-lg font-bold text-gray-800 p-4 pb-2">Account Settings</Text>
@@ -158,70 +156,9 @@ export default function ProfileScreen() {
           <Text className="text-red-600 font-bold ml-2">Logout</Text>
         </TouchableOpacity>
       </ScrollView>
-
-      {/* Join Class Modal (for staff) */}
-      <Modal
-        visible={showJoinClassModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowJoinClassModal(false)}
-      >
-        <View className="flex-1 bg-black/50 justify-center items-center px-6">
-          <View className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold text-gray-800">Join Class</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowJoinClassModal(false);
-                  setClassCode('');
-                }}
-              >
-                <X size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-
-            <Text className="text-gray-600 mb-4">
-              Enter the class code provided by your advisor to join the class.
-            </Text>
-
-            <View className="mb-6">
-              <Text className="text-gray-700 mb-2 font-medium">Class Code</Text>
-              <TextInput
-                className="border-2 border-gray-300 rounded-lg p-4 text-lg font-mono"
-                placeholder="e.g., CS301"
-                value={classCode}
-                onChangeText={setClassCode}
-                autoCapitalize="characters"
-                autoFocus={true}
-              />
-            </View>
-
-            <View className="flex-row gap-3">
-              <TouchableOpacity
-                onPress={() => {
-                  setShowJoinClassModal(false);
-                  setClassCode('');
-                }}
-                className="flex-1 bg-gray-200 py-3 rounded-lg items-center"
-              >
-                <Text className="text-gray-700 font-bold">Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleJoinClass}
-                disabled={loading}
-                className="flex-1 bg-blue-600 py-3 rounded-lg items-center"
-              >
-                <Text className="text-white font-bold">
-                  {loading ? 'Joining...' : 'Join Class'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
       
-      <BottomNav />
+      {/* Show BottomNav only if user is not staff OR if staff has at least one class */}
+      {(user?.role !== 'staff' || (user?.joinedClasses && user.joinedClasses.length > 0)) && <BottomNav />}
     </View>
   );
 }
