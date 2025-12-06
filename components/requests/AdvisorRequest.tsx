@@ -20,8 +20,10 @@ export default function AdvisorRequest() {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [adjustedPoints, setAdjustedPoints] = useState('');
+  const [correctionReason, setCorrectionReason] = useState('');
 
   // Load requests from database
   useEffect(() => {
@@ -161,42 +163,43 @@ export default function AdvisorRequest() {
     const request = pendingRequests.find(r => r.id === id);
     if (!request) return;
 
-    Alert.alert(
-      'Request Correction',
-      `Ask ${request.staff?.name} to make changes to this request?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'Send',
-          onPress: async () => {
-            try {
-              setIsProcessing(id);
-              
-              const result = await requestCorrection(
-                id,
-                'Please review and provide more details for this request'
-              );
+    setSelectedRequest(request);
+    setCorrectionReason('');
+    setShowCorrectionModal(true);
+  };
 
-              if (result.success) {
-                await decrementPendingCount();
-                Alert.alert('Correction Requested', `${request.staff?.name} will be notified to make changes`);
-                await loadRequests(); // Reload requests
-              } else {
-                Alert.alert('Error', result.message);
-              }
-            } catch (error) {
-              console.error('Failed to request correction:', error);
-              Alert.alert('Error', 'Failed to request correction');
-            } finally {
-              setIsProcessing(null);
-            }
-          }
-        }
-      ]
-    );
+  const confirmCorrectionRequest = async () => {
+    if (!selectedRequest) return;
+
+    if (!correctionReason.trim()) {
+      Alert.alert('Missing Reason', 'Please provide a reason for requesting correction');
+      return;
+    }
+
+    try {
+      setIsProcessing(selectedRequest.id);
+      setShowCorrectionModal(false);
+      
+      const result = await requestCorrection(
+        selectedRequest.id,
+        correctionReason
+      );
+
+      if (result.success) {
+        await decrementPendingCount();
+        Alert.alert('Correction Requested', `${selectedRequest.staff?.name} will be notified to make changes`);
+        await loadRequests();
+      } else {
+        Alert.alert('Error', result.message);
+      }
+    } catch (error) {
+      console.error('Failed to request correction:', error);
+      Alert.alert('Error', 'Failed to request correction');
+    } finally {
+      setIsProcessing(null);
+      setSelectedRequest(null);
+      setCorrectionReason('');
+    }
   };
 
   const renderPendingItem = ({ item }: { item: any }) => {
@@ -494,6 +497,63 @@ export default function AdvisorRequest() {
                     className="flex-1 bg-green-600 py-3 rounded-lg items-center"
                   >
                     <Text className="text-white font-bold">Approve</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Correction Modal */}
+      <Modal
+        visible={showCorrectionModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCorrectionModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <Text className="text-xl font-bold text-gray-900 mb-2">Request Correction</Text>
+            
+            {selectedRequest && (
+              <>
+                <View className="bg-gray-50 rounded-lg p-3 mb-4">
+                  <Text className="text-gray-600 text-sm mb-1">Staff: {selectedRequest.staff?.name}</Text>
+                  <Text className="text-gray-600 text-sm mb-2">Requested: {selectedRequest.requested_points} points</Text>
+                  <Text className="text-gray-800 text-sm">{selectedRequest.work_description}</Text>
+                </View>
+
+                <View className="mb-4">
+                  <Text className="text-gray-700 font-medium mb-2">Correction Reason *</Text>
+                  <TextInput
+                    className="border border-gray-300 rounded-lg p-3 h-24"
+                    placeholder="Explain what needs to be corrected..."
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                    value={correctionReason}
+                    onChangeText={setCorrectionReason}
+                    autoFocus
+                  />
+                </View>
+
+                <View className="flex-row gap-3">
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowCorrectionModal(false);
+                      setSelectedRequest(null);
+                      setCorrectionReason('');
+                    }}
+                    className="flex-1 bg-gray-200 py-3 rounded-lg items-center"
+                  >
+                    <Text className="text-gray-700 font-bold">Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={confirmCorrectionRequest}
+                    className="flex-1 bg-yellow-600 py-3 rounded-lg items-center"
+                  >
+                    <Text className="text-white font-bold">Send Request</Text>
                   </TouchableOpacity>
                 </View>
               </>
