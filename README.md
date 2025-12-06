@@ -38,45 +38,45 @@ A modern mobile application built with React Native and Expo for managing CRED (
 
 ```
 CRED/
-├── app/                          # File-based routing screens
-│   ├── _layout.tsx              # Root layout with navigation guards
-│   ├── index.tsx                # Home/Dashboard router
-│   ├── login.tsx                # Authentication screen
-│   ├── joinClass.tsx            # Class joining interface
-│   ├── request.tsx              # Request management
-│   ├── requestDetail.tsx        # Detailed request view
-│   ├── leaderboard.tsx          # Leaderboard rankings
-│   ├── profile.tsx              # User profile
-│   ├── classManagement.tsx      # Advisor class management
-│   └── notifications.tsx        # Notification center
-├── components/                   # Reusable UI components
+├── app/                        
+│   ├── _layout.tsx             
+│   ├── index.tsx              
+│   ├── login.tsx               
+│   ├── joinClass.tsx          
+│   ├── request.tsx             
+│   ├── requestDetail.tsx      
+│   ├── leaderboard.tsx       
+│   ├── profile.tsx             
+│   ├── classManagement.tsx     
+│   └── notifications.tsx       
+├── components/                 
 │   ├── dashboards/
-│   │   ├── StudentDashboard.tsx # Staff dashboard
-│   │   ├── AdvisorDashboard.tsx # Advisor dashboard
+│   │   ├── StudentDashboard.tsx
+│   │   ├── AdvisorDashboard.tsx
 │   │   └── RepresentativeDashboard.tsx
 │   ├── requests/
-│   │   ├── RepresentativeRequest.tsx # Staff request submission
-│   │   └── AdvisorRequest.tsx   # Advisor request review
-│   ├── BottomNav.tsx            # Bottom navigation bar
-│   ├── ClassLeaderboard.tsx     # Class-specific leaderboard
-│   ├── DeleteClassModal.tsx     # Class deletion confirmation
-│   └── LeaveClassModal.tsx      # Leave class confirmation
-├── contexts/                     # React Context providers
-│   ├── AuthContext.tsx          # Authentication & user state
-│   └── ClassContext.tsx         # Class management state
-├── services/                     # Business logic & API calls
-│   ├── supabaseAuth.ts          # Authentication services
-│   ├── supabaseClasses.ts       # Class management
-│   ├── supabaseRequests.ts      # Request operations
-│   ├── supabaseActivities.ts    # Activity tracking
-│   └── notificationService.ts   # Notification handling
-├── lib/                          # Utilities & configurations
-│   ├── supabase.ts              # Supabase client setup
-│   ├── types.ts                 # TypeScript type definitions
-│   └── styles.ts                # Shared styles
-├── constants/                    # App constants
-│   └── theme.ts                 # Theme configuration
-└── schema.sql                    # Database schema
+│   │   ├── RepresentativeRequest.tsx
+│   │   └── AdvisorRequest.tsx   
+│   ├── BottomNav.tsx            
+│   ├── ClassLeaderboard.tsx    
+│   ├── DeleteClassModal.tsx     
+│   └── LeaveClassModal.tsx      
+├── contexts/                    
+│   ├── AuthContext.tsx         
+│   └── ClassContext.tsx        
+├── services/                     
+│   ├── supabaseAuth.ts         
+│   ├── supabaseClasses.ts       
+│   ├── supabaseRequests.ts     
+│   ├── supabaseActivities.ts   
+│   └── notificationService.ts 
+├── lib/                         
+│   ├── supabase.ts            
+│   ├── types.ts                
+│   └── styles.ts                
+├── constants/                   
+│   └── theme.ts                 
+└── schema.sql                    
 
 ```
 
@@ -252,11 +252,4 @@ This is a private project. For internal contributions, please follow the standar
 2. Make your changes
 3. Submit a pull request
 4. Wait for code review
-
-## 📞 Support
-
-For issues or questions, please contact the development team.
-
 ---
-
-**Built with ❤️ using Expo and React Native**
