@@ -1,13 +1,22 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ArrowLeft, Bell, CheckCircle, XCircle, FileText, Check, X } from 'lucide-react-native';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Notifications() {
   const router = useRouter();
   const { user, markNotificationAsRead } = useAuth();
+
+  // Redirect staff without active class to joinClass page
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.role === 'staff' && !user?.currentClassId) {
+        router.replace('/joinClass');
+      }
+    }, [user?.role, user?.currentClassId, router])
+  );
 
   // Filter out read notifications - only show unread ones
   const notifications = (user?.notifications || []).filter(n => !n.read);
