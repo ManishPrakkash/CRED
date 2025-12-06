@@ -10,6 +10,7 @@ export interface CreateRequestParams {
   requested_points: number;
   target_staff_id?: string;
   is_peer_request?: boolean;
+  auto_approve?: boolean; // For advisor-submitted requests
 }
 
 export interface RequestFilters {
@@ -51,6 +52,74 @@ export const createRequest = async (params: CreateRequestParams) => {
   try {
     console.log('[createRequest] Creating request:', params);
 
+    // If auto_approve is true, directly approve and update points
+    if (params.auto_approve) {
+      const { data, error } = await supabase
+        .from('requests')
+        .insert({
+          staff_id: params.staff_id,
+          advisor_id: params.advisor_id,
+          class_id: params.class_id || null,
+          work_description: params.work_description,
+          requested_points: params.requested_points,
+          approved_points: params.requested_points,
+          target_staff_id: params.target_staff_id || params.staff_id,
+          is_peer_request: params.is_peer_request || false,
+          status: 'approved',
+          responded_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[createRequest] Error:', error);
+        return { success: false, message: error.message, request: null };
+      }
+
+      // Update staff CRED points immediately
+      const updateResult = await updateStaffCredPoints(
+        params.staff_id,
+        params.requested_points,
+        data.id,
+        params.work_description,
+        params.requested_points
+      );
+
+      if (!updateResult.success) {
+        console.error('[createRequest] Failed to update points:', updateResult.message);
+        // Note: Request is created but points update failed
+        return { success: false, message: 'Request created but failed to update points: ' + updateResult.message, request: data };
+      }
+
+      // Get advisor name for notification
+      const { data: advisorData } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', params.advisor_id)
+        .single();
+
+      const advisorName = advisorData?.name || 'Advisor';
+
+      // Create notification for staff
+      await createNotification({
+        user_id: params.staff_id,
+        type: 'request_approved',
+        title: 'Request Auto-Approved',
+        message: `Your request has been approved by ${advisorName}! You received ${params.requested_points} CRED points.`,
+        related_request_id: data.id,
+        request_data: {
+          work_description: params.work_description,
+          requested_points: params.requested_points,
+          approved_points: params.requested_points,
+          advisor_name: advisorName
+        }
+      });
+
+      console.log('[createRequest] Request auto-approved and points updated:', data.id);
+      return { success: true, message: 'Request approved and points updated successfully', request: data };
+    }
+
+    // Normal flow - create pending request
     const { data, error } = await supabase
       .from('requests')
       .insert({
