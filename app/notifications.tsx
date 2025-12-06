@@ -52,21 +52,8 @@ export default function Notifications() {
   };
 
   const handleNotificationPress = (notification: any) => {
-    // Only mark as read for staff notifications (approved/rejected/correction)
-    // Advisor notifications (request_submitted) stay unread until responded to
-    if (notification.type !== 'request_submitted') {
-      markNotificationAsRead(notification.id);
-    }
-
-    // Navigate to request detail if requestData is available
-    if (notification.requestData) {
-      router.push({
-        pathname: '/requestDetail',
-        params: {
-          requestData: JSON.stringify(notification.requestData)
-        }
-      });
-    }
+    // Don't navigate anywhere - just view the notification
+    // Notifications are read-only for viewing
   };
 
   const handleMarkAsRead = (notificationId: string, event: any) => {
@@ -124,13 +111,11 @@ export default function Notifications() {
         ) : (
           <View className="gap-3">
             {notifications.map((notification) => (
-              <TouchableOpacity
+              <View
                 key={notification.id}
-                onPress={() => handleNotificationPress(notification)}
                 className={`bg-white rounded-xl p-4 border ${
                   !notification.read ? 'border-l-4' : ''
                 } ${getNotificationColor(notification.type)}`}
-                activeOpacity={0.7}
               >
                 <View className="flex-row items-start gap-3">
                   <View className={`p-2 rounded-lg ${getNotificationColor(notification.type)}`}>
@@ -163,7 +148,7 @@ export default function Notifications() {
                         </Text>
                       </View>
                       
-                      {!notification.read && user?.role === 'staff' && (
+                      {!notification.read && (
                         <TouchableOpacity
                           onPress={(e) => handleMarkAsRead(notification.id, e)}
                           className="border border-green-500 bg-green-50 px-2.5 py-1 rounded-md flex-row items-center justify-center gap-1"
@@ -176,7 +161,7 @@ export default function Notifications() {
                     </View>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
