@@ -3,8 +3,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createRequest, getStaffRequests, Request, updateAndResubmitRequest } from '@/services/supabaseRequests';
 import { createNotification } from '@/services/supabaseNotifications';
 import { getClassById } from '@/services/supabaseClasses';
+import { supabase } from '@/lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Calendar, Plus, Search, User } from 'lucide-react-native';
+import { Calendar, Plus, Search, User, Users, ChevronDown } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { FlatList, Platform, ScrollView, Text, TextInput, TouchableOpacity, View, Alert, Modal, ActivityIndicator } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -13,11 +14,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const PENDING_REQUESTS_KEY = '@cred_pending_requests_count';
 const CORRECTION_REQUESTS_KEY = '@cred_correction_requests_count';
 
+interface Classmate {
+  id: string;
+  name: string;
+  email: string;
+  employee_id: string;
+}
+
 export default function StaffRequest() {
   const { user } = useAuth();
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [workDescription, setWorkDescription] = useState('');
   const [requestedPoints, setRequestedPoints] = useState('');
+  const [pointsType, setPointsType] = useState<'add' | 'subtract'>('add');
+  const [selectedClassmate, setSelectedClassmate] = useState<Classmate | null>(null);
+  const [classmates, setClassmates] = useState<Classmate[]>([]);
+  const [showClassmateDropdown, setShowClassmateDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -33,6 +45,45 @@ export default function StaffRequest() {
   useEffect(() => {
     loadRequests();
   }, [user?.id]);
+
+  // Fetch classmates in the current class
+  useEffect(() => {
+    const fetchClassmates = async () => {
+      if (!user?.currentClassId) return;
+
+      try {
+        // Get all staff users with joined_classes
+        const { data: allStaff, error } = await supabase
+          .from('users')
+          .select('id, name, email, employee_id, joined_classes')
+          .eq('role', 'staff');
+
+        if (error) {
+          console.error('Error fetching classmates:', error);
+          return;
+        }
+
+        // Filter staff who are in the same class and exclude current user
+        const classmatesList = (allStaff || [])
+          .filter(staff => 
+            staff.id !== user.id && // Exclude self
+            staff.joined_classes?.some((jc: any) => jc.class_id === user.currentClassId)
+          )
+          .map(staff => ({
+            id: staff.id,
+            name: staff.name,
+            email: staff.email,
+            employee_id: staff.employee_id
+          }));
+
+        setClassmates(classmatesList);
+      } catch (error) {
+        console.error('Failed to fetch classmates:', error);
+      }
+    };
+
+    fetchClassmates();
+  }, [user?.currentClassId, user?.id]);
 
   const loadRequests = async () => {
     if (!user?.id) return;
@@ -191,13 +242,19 @@ export default function StaffRequest() {
     try {
       setIsSubmitting(true);
 
+      const isPeerRequest = selectedClassmate !== null;
+      const targetStaffId = isPeerRequest ? selectedClassmate.id : user.id;
+      const pointsValue = pointsType === 'subtract' ? -points : points;
+
       // Create request in database
       const result = await createRequest({
         staff_id: user.id,
         advisor_id: advisorId,
         class_id: currentClass?.class_id,
         work_description: workDescription,
-        requested_points: points
+        requested_points: pointsValue,
+        target_staff_id: targetStaffId,
+        is_peer_request: isPeerRequest
       });
 
       if (!result.success) {
@@ -207,17 +264,24 @@ export default function StaffRequest() {
 
       // Create notification for advisor about new request
       if (result.request) {
+        const notificationMessage = isPeerRequest
+          ? `${user.name} submitted a ${pointsType} request for ${selectedClassmate?.name}: ${Math.abs(pointsValue)} CRED points`
+          : `${user.name || 'Staff'} submitted a request for ${Math.abs(pointsValue)} CRED points`;
+
         await createNotification({
           user_id: advisorId,
           type: 'request_submitted',
-          title: 'New Work Request',
-          message: `${user.name || 'Staff'} submitted a request for ${points} CRED points`,
+          title: isPeerRequest ? 'New Peer Request' : 'New Work Request',
+          message: notificationMessage,
           related_request_id: result.request.id,
           request_data: {
             staff_id: user.id,
             staff_name: user.name,
+            target_staff_id: targetStaffId,
+            target_staff_name: selectedClassmate?.name,
+            is_peer_request: isPeerRequest,
             work_description: workDescription,
-            requested_points: points,
+            requested_points: pointsValue,
             class_id: currentClass?.class_id,
             class_name: currentClass?.class_name
           }
@@ -233,13 +297,16 @@ export default function StaffRequest() {
         console.error('Failed to update request counts:', error);
       }
 
-      Alert.alert(
-        'Success',
-        `Work request submitted: ${requestedPoints} points\nYour request will be reviewed by the HOD.`
-      );
+      const successMessage = isPeerRequest
+        ? `Request submitted for ${selectedClassmate?.name}: ${pointsType === 'add' ? '+' : '-'}${requestedPoints} points\nYour request will be reviewed by the HOD.`
+        : `Work request submitted: ${requestedPoints} points\nYour request will be reviewed by the HOD.`;
+
+      Alert.alert('Success', successMessage);
       
       setWorkDescription('');
       setRequestedPoints('');
+      setSelectedClassmate(null);
+      setPointsType('add');
       setShowSubmitForm(false);
       
       // Reload requests to show the new one
@@ -408,6 +475,54 @@ export default function StaffRequest() {
               {editingRequestId ? 'Update Request' : 'New Request'}
             </Text>
             
+            {/* Classmate Selection (only for new requests, not edits) */}
+            {!editingRequestId && (
+              <View className="mb-4">
+                <Text className="text-gray-700 font-medium mb-2">Request For</Text>
+                <TouchableOpacity
+                  className="border border-gray-300 rounded-lg p-3 flex-row items-center justify-between"
+                  onPress={() => setShowClassmateDropdown(true)}
+                >
+                  <View className="flex-row items-center flex-1">
+                    <Users size={20} color="#64748b" />
+                    <Text className="ml-2 text-gray-800">
+                      {selectedClassmate ? selectedClassmate.name : 'Myself'}
+                    </Text>
+                  </View>
+                  <ChevronDown size={20} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Point Type Selection (always show for new requests) */}
+            {!editingRequestId && (
+              <View className="mb-4">
+                <Text className="text-gray-700 font-medium mb-2">Point Type *</Text>
+                <View className="flex-row gap-3">
+                  <TouchableOpacity
+                    className={`flex-1 py-3 rounded-lg border-2 items-center ${
+                      pointsType === 'add' ? 'bg-green-50 border-green-500' : 'border-gray-300'
+                    }`}
+                    onPress={() => setPointsType('add')}
+                  >
+                    <Text className={`font-bold ${pointsType === 'add' ? 'text-green-700' : 'text-gray-600'}`}>
+                      + Add Points
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    className={`flex-1 py-3 rounded-lg border-2 items-center ${
+                      pointsType === 'subtract' ? 'bg-red-50 border-red-500' : 'border-gray-300'
+                    }`}
+                    onPress={() => setPointsType('subtract')}
+                  >
+                    <Text className={`font-bold ${pointsType === 'subtract' ? 'text-red-700' : 'text-gray-600'}`}>
+                      - Deduct Points
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             <View className="mb-4">
               <Text className="text-gray-700 font-medium mb-2">Work Description *</Text>
               <TextInput
@@ -428,6 +543,11 @@ export default function StaffRequest() {
                 value={requestedPoints}
                 onChangeText={setRequestedPoints}
               />
+              {selectedClassmate && (
+                <Text className="text-xs text-gray-500 mt-1">
+                  Points will be {pointsType === 'add' ? 'added to' : 'deducted from'} {selectedClassmate.name}'s account
+                </Text>
+              )}
             </View>
             
             <View className="flex-row gap-3">
@@ -437,6 +557,8 @@ export default function StaffRequest() {
                   setEditingRequestId(null);
                   setWorkDescription('');
                   setRequestedPoints('');
+                  setSelectedClassmate(null);
+                  setPointsType('add');
                 }}
                 className="flex-1 bg-gray-200 py-3 rounded-lg items-center"
                 disabled={isSubmitting}
@@ -591,6 +713,66 @@ export default function StaffRequest() {
       </ScrollView>
 
       <BottomNav />
+
+      {/* Classmate Selection Modal */}
+      <Modal
+        visible={showClassmateDropdown}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowClassmateDropdown(false)}
+      >
+        <View className="flex-1 bg-black/50">
+          <TouchableOpacity 
+            className="flex-1" 
+            activeOpacity={1} 
+            onPress={() => setShowClassmateDropdown(false)}
+          >
+            <View className="flex-1 justify-center px-6">
+              <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+                <View className="bg-white rounded-xl shadow-lg">
+                  <View className="px-4 py-4 border-b border-gray-200">
+                    <Text className="text-gray-900 text-lg font-bold">Select Recipient</Text>
+                    <Text className="text-gray-500 text-sm mt-1">Choose who receives the points</Text>
+                  </View>
+                  
+                  <ScrollView className="max-h-96">
+                    <TouchableOpacity
+                      className={`p-4 border-b border-gray-100 ${!selectedClassmate ? 'bg-orange-50' : ''}`}
+                      onPress={() => {
+                        setSelectedClassmate(null);
+                        setShowClassmateDropdown(false);
+                      }}
+                    >
+                      <Text className="text-gray-900 font-semibold">Myself</Text>
+                      <Text className="text-gray-500 text-xs mt-1">Request for your own work</Text>
+                    </TouchableOpacity>
+
+                    {classmates.map((classmate) => (
+                      <TouchableOpacity
+                        key={classmate.id}
+                        className={`p-4 border-b border-gray-100 ${selectedClassmate?.id === classmate.id ? 'bg-orange-50' : ''}`}
+                        onPress={() => {
+                          setSelectedClassmate(classmate);
+                          setShowClassmateDropdown(false);
+                        }}
+                      >
+                        <Text className="text-gray-900 font-semibold">{classmate.name}</Text>
+                        <Text className="text-gray-500 text-xs mt-1">{classmate.employee_id}</Text>
+                      </TouchableOpacity>
+                    ))}
+
+                    {classmates.length === 0 && (
+                      <View className="p-6">
+                        <Text className="text-gray-400 text-center text-sm">No classmates found</Text>
+                      </View>
+                    )}
+                  </ScrollView>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
