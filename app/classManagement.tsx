@@ -1,13 +1,16 @@
 import BottomNav from '@/components/BottomNav';
 import DeleteClassModal from '@/components/DeleteClassModal';
 import { useClasses } from '@/contexts/ClassContext';
-import { getClassStaff } from '@/services/supabaseClasses';
+import { getClassStaff, toggleClassEnrollment } from '@/services/supabaseClasses';
+import { createRequest } from '@/services/supabaseRequests';
 // import { mockStudents } from '@/services/mockData';
 import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, BookOpen, Check, Copy, Plus, Search, Trash2, Users, X } from 'lucide-react-native';
+import { ArrowLeft, BookOpen, Check, Copy, Lock, LockOpen, Plus, Search, Trash2, Users, X } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { Alert, FlatList, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StaffMember {
   id: string;
@@ -18,20 +21,34 @@ interface StaffMember {
 }
 
 const ClassManagementScreen = () => {
-  const { classes, loading, createClass, deleteClass } = useClasses();
+  const { classes, loading, createClass, deleteClass, refreshClasses } = useClasses();
+  const { user } = useAuth();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [className, setClassName] = useState('');
   const [classCode, setClassCode] = useState('');
   const [department, setDepartment] = useState('');
   const [semester, setSemester] = useState('');
   const [academicYear, setAcademicYear] = useState('');
-  const [maxCapacity, setMaxCapacity] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [classToDelete, setClassToDelete] = useState<any>(null);
-  const [viewingClass, setViewingClass] = useState<{ id: string; name: string; code: string } | null>(null);
+  const [viewingClass, setViewingClass] = useState<{ id: string; name: string; code: string; is_open: boolean } | null>(null);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
+  const [workDescription, setWorkDescription] = useState('');
+  const [requestedPoints, setRequestedPoints] = useState('');
+  const [pointType, setPointType] = useState<'add' | 'deduct'>('add');
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+
+  // Refresh classes when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshClasses();
+    }, [])
+  );
 
   // Open delete modal only after classToDelete state is set
   useEffect(() => {
@@ -83,7 +100,6 @@ const ClassManagementScreen = () => {
       department: department.trim() || undefined,
       semester: semester.trim() || undefined,
       academic_year: academicYear.trim() || undefined,
-      total_students: maxCapacity.trim() ? parseInt(maxCapacity.trim()) : undefined,
     });
 
     if (result.success) {
@@ -92,7 +108,6 @@ const ClassManagementScreen = () => {
       setDepartment('');
       setSemester('');
       setAcademicYear('');
-      setMaxCapacity('');
       setShowCreateForm(false);
       Alert.alert('Success', `Class created successfully!\n\nClass Code: ${result.class?.class_code}`, [
         { text: 'OK' }
@@ -102,9 +117,9 @@ const ClassManagementScreen = () => {
     }
   };
 
-  const handleViewClassStaff = async (classId: string, className: string, classCode: string) => {
-    console.log('Viewing class staff:', { classId, className, classCode });
-    setViewingClass({ id: classId, name: className, code: classCode });
+  const handleViewClassStaff = async (classId: string, className: string, classCode: string, isOpen: boolean) => {
+    console.log('Viewing class staff:', { classId, className, classCode, isOpen });
+    setViewingClass({ id: classId, name: className, code: classCode, is_open: isOpen });
     setIsLoadingStaff(true);
     setStaffList([]);
 
@@ -122,10 +137,116 @@ const ClassManagementScreen = () => {
     }
   };
 
+  const handleToggleEnrollment = async (isOpen: boolean) => {
+    if (!viewingClass || !user?.id) return;
+
+    const result = await toggleClassEnrollment(viewingClass.id, user.id, isOpen);
+    
+    if (result.success) {
+      setViewingClass({ ...viewingClass, is_open: isOpen });
+      await refreshClasses();
+      Alert.alert('Success', result.message);
+    } else {
+      Alert.alert('Error', result.message);
+    }
+  };
+
   const formatJoinedDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
+
+  const handleOpenRequestModal = (staff: StaffMember) => {
+    setSelectedStaff(staff);
+    setShowRequestModal(true);
+    setWorkDescription('');
+    setRequestedPoints('');
+    setPointType('add');
+  };
+
+  const handleCloseRequestModal = () => {
+    setShowRequestModal(false);
+    setSelectedStaff(null);
+    setWorkDescription('');
+    setRequestedPoints('');
+    setPointType('add');
+  };
+
+  const handleSubmitRequest = async () => {
+    if (!selectedStaff || !user?.id || !viewingClass?.id) return;
+
+    if (!workDescription.trim()) {
+      Alert.alert('Error', 'Please enter work description');
+      return;
+    }
+
+    if (!requestedPoints.trim()) {
+      Alert.alert('Error', 'Please enter points');
+      return;
+    }
+
+    const pointsValue = parseFloat(requestedPoints);
+    if (isNaN(pointsValue)) {
+      Alert.alert('Error', 'Please enter valid points');
+      return;
+    }
+
+    // Validate based on point type
+    if (pointType === 'add' && pointsValue <= 0) {
+      Alert.alert('Error', 'Points must be positive for Add Points');
+      return;
+    }
+
+    if (pointType === 'deduct' && pointsValue >= 0) {
+      Alert.alert('Error', 'Points must be negative for Deduct Points');
+      return;
+    }
+
+    setIsSubmittingRequest(true);
+
+    try {
+      const result = await createRequest({
+        staff_id: selectedStaff.id,
+        advisor_id: user.id,
+        class_id: viewingClass.id,
+        work_description: workDescription.trim(),
+        requested_points: pointsValue,
+        auto_approve: true, // Advisor requests are auto-approved
+      });
+
+      if (result.success) {
+        Alert.alert('Success', 'Points updated successfully');
+        handleCloseRequestModal();
+      } else {
+        Alert.alert('Error', result.message);
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to submit request');
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  };
+
+  const handlePointsChange = (text: string) => {
+    if (pointType === 'deduct') {
+      // For deduct, ensure negative
+      if (text.startsWith('-')) {
+        setRequestedPoints(text);
+      } else if (text === '') {
+        setRequestedPoints('');
+      } else {
+        setRequestedPoints('-' + text.replace('-', ''));
+      }
+    } else {
+      // For add, ensure positive
+      setRequestedPoints(text.replace('-', ''));
+    }
+  };
+
+  const filteredStaffList = staffList.filter(staff =>
+    staff.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+    staff.email.toLowerCase().includes(staffSearchQuery.toLowerCase())
+  );
 
   // TODO: Remove - no students in this project
   // const handleRemoveStudent = (studentId: string, studentName: string) => {
@@ -234,7 +355,7 @@ const ClassManagementScreen = () => {
       <View className="flex-row items-center justify-between">
         <TouchableOpacity
           className="flex-row items-center flex-1"
-          onPress={() => handleViewClassStaff(item.id, item.class_name, item.class_code)}
+          onPress={() => handleViewClassStaff(item.id, item.class_name, item.class_code, item.is_open)}
         >
           <View className="w-12 h-12 rounded-xl bg-green-100 items-center justify-center">
             <BookOpen size={24} color="#10b981" />
@@ -245,13 +366,6 @@ const ClassManagementScreen = () => {
             {item.department && (
               <Text className="text-gray-400 text-xs mt-0.5">{item.department}</Text>
             )}
-            <View className="flex-row items-center bg-green-50 px-2 py-1 rounded-full mt-1 self-start">
-              <Users size={12} color="#10b981" />
-              <Text className="text-green-700 ml-1 font-medium text-xs">
-                {item.current_enrollment || 0}
-                {item.total_students > 0 ? `/${item.total_students}` : ''} Staff
-              </Text>
-            </View>
           </View>
         </TouchableOpacity>
 
@@ -330,15 +444,63 @@ const ClassManagementScreen = () => {
             style={{ paddingBottom: 32 }}
           >
             <View style={{ paddingTop: 64, paddingBottom: 16, paddingHorizontal: 24 }}>
-              <TouchableOpacity
-                onPress={() => setViewingClass(null)}
-                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
-              >
-                <ArrowLeft size={24} color="white" />
-                <Text style={{ color: 'white', marginLeft: 8, fontSize: 16 }}>Back to Classes</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <TouchableOpacity
+                  onPress={() => setViewingClass(null)}
+                  style={{ flexDirection: 'row', alignItems: 'center' }}
+                >
+                  <ArrowLeft size={24} color="white" />
+                  <Text style={{ color: 'white', marginLeft: 8, fontSize: 16 }}>Back to Classes</Text>
+                </TouchableOpacity>
+                
+                {/* Toggle Enrollment Button - Top Right */}
+                <TouchableOpacity
+                  onPress={() => handleToggleEnrollment(!viewingClass.is_open)}
+                  style={{
+                    backgroundColor: viewingClass.is_open ? 'rgba(239, 68, 68, 1)' : 'rgba(16, 185, 129, 1)',
+                    paddingVertical: 8,
+                    paddingHorizontal: 14,
+                    borderRadius: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3.84,
+                    elevation: 5,
+                  }}
+                >
+                  {viewingClass.is_open ? (
+                    <>
+                      <Lock size={16} color="white" strokeWidth={2.5} />
+                      <Text style={{
+                        marginLeft: 6,
+                        fontWeight: 'bold',
+                        fontSize: 13,
+                        color: 'white',
+                        letterSpacing: 0.3
+                      }}>
+                        CLOSE
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <LockOpen size={16} color="white" strokeWidth={2.5} />
+                      <Text style={{
+                        marginLeft: 6,
+                        fontWeight: 'bold',
+                        fontSize: 13,
+                        color: 'white',
+                        letterSpacing: 0.3
+                      }}>
+                        OPEN
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
               <Text style={{ color: 'white', fontSize: 24, fontWeight: 'bold' }}>{viewingClass.name}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
                 <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14 }}>Code: {viewingClass.code}</Text>
                 <View style={{
                   marginLeft: 16,
@@ -357,7 +519,7 @@ const ClassManagementScreen = () => {
               </View>
             </View>
           </LinearGradient>
-
+          
           <ScrollView
             style={{ flex: 1, paddingHorizontal: 16, marginTop: -24 }}
             contentContainerStyle={{ paddingBottom: 100 }}
@@ -410,6 +572,28 @@ const ClassManagementScreen = () => {
               </View>
             ) : (
               <View style={{ paddingTop: 8 }}>
+                {/* Search Bar */}
+                <View style={{
+                  backgroundColor: 'white',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  marginBottom: 16,
+                  borderWidth: 1,
+                  borderColor: '#e5e7eb',
+                }}>
+                  <Search size={20} color="#64748b" />
+                  <TextInput
+                    style={{ flex: 1, marginLeft: 8, fontSize: 14, color: '#111827' }}
+                    placeholder="Search staff by name or email..."
+                    placeholderTextColor="#9ca3af"
+                    value={staffSearchQuery}
+                    onChangeText={setStaffSearchQuery}
+                  />
+                </View>
+
                 <View style={{
                   backgroundColor: 'white',
                   paddingHorizontal: 16,
@@ -418,10 +602,10 @@ const ClassManagementScreen = () => {
                   marginBottom: 16
                 }}>
                   <Text style={{ color: '#6b7280', fontSize: 12, fontWeight: '600', letterSpacing: 0.5 }}>
-                    ENROLLED MEMBERS
+                    ENROLLED MEMBERS ({filteredStaffList.length})
                   </Text>
                 </View>
-                {staffList.map((staff, index) => (
+                {filteredStaffList.map((staff, index) => (
                   <View
                     key={staff.id}
                     style={{
@@ -462,20 +646,24 @@ const ClassManagementScreen = () => {
                         </Text>
                       </View>
                       <View style={{ alignItems: 'flex-end', marginLeft: 12 }}>
-                        <View style={{
-                          backgroundColor: '#ffedd5',
-                          paddingHorizontal: 10,
-                          paddingVertical: 5,
-                          borderRadius: 8,
-                          marginBottom: 6
-                        }}>
-                          <Text style={{ color: '#10b981', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 }}>
-                            JOINED
-                          </Text>
-                        </View>
-                        <Text style={{ color: '#6b7280', fontSize: 12, fontWeight: '500' }}>
-                          {formatJoinedDate(staff.joined_at)}
-                        </Text>
+                        <TouchableOpacity
+                          onPress={() => handleOpenRequestModal(staff)}
+                          style={{
+                            backgroundColor: '#10b981',
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.15,
+                            shadowRadius: 3,
+                            elevation: 3,
+                          }}
+                        >
+                          <Plus size={22} color="white" strokeWidth={2.5} />
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </View>
@@ -483,6 +671,178 @@ const ClassManagementScreen = () => {
               </View>
             )}
           </ScrollView>
+
+          {/* Request Modal */}
+          <Modal
+            visible={showRequestModal}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={handleCloseRequestModal}
+          >
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+              <View style={{
+                backgroundColor: 'white',
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                paddingTop: 20,
+                paddingHorizontal: 20,
+                paddingBottom: 40,
+                maxHeight: '85%'
+              }}>
+                {/* Header */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827' }}>
+                    Submit Request for {selectedStaff?.name}
+                  </Text>
+                  <TouchableOpacity onPress={handleCloseRequestModal}>
+                    <X size={24} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {/* Point Type Selection */}
+                  <View style={{ marginBottom: 20 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>
+                      Point Type
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setPointType('add');
+                          if (requestedPoints && parseFloat(requestedPoints) < 0) {
+                            setRequestedPoints(Math.abs(parseFloat(requestedPoints)).toString());
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 12,
+                          borderRadius: 12,
+                          borderWidth: 2,
+                          borderColor: pointType === 'add' ? '#10b981' : '#e5e7eb',
+                          backgroundColor: pointType === 'add' ? '#d1fae5' : 'white',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Text style={{
+                          fontWeight: '600',
+                          color: pointType === 'add' ? '#10b981' : '#6b7280'
+                        }}>
+                          Add Points
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setPointType('deduct');
+                          if (requestedPoints && parseFloat(requestedPoints) > 0) {
+                            setRequestedPoints('-' + requestedPoints);
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 12,
+                          borderRadius: 12,
+                          borderWidth: 2,
+                          borderColor: pointType === 'deduct' ? '#ef4444' : '#e5e7eb',
+                          backgroundColor: pointType === 'deduct' ? '#fee2e2' : 'white',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Text style={{
+                          fontWeight: '600',
+                          color: pointType === 'deduct' ? '#ef4444' : '#6b7280'
+                        }}>
+                          Deduct Points
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Work Description */}
+                  <View style={{ marginBottom: 20 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>
+                      Work Description *
+                    </Text>
+                    <TextInput
+                      style={{
+                        borderWidth: 1,
+                        borderColor: '#d1d5db',
+                        borderRadius: 12,
+                        padding: 12,
+                        fontSize: 14,
+                        color: '#111827',
+                        minHeight: 100,
+                        textAlignVertical: 'top'
+                      }}
+                      placeholder="Describe the work performed..."
+                      placeholderTextColor="#9ca3af"
+                      value={workDescription}
+                      onChangeText={setWorkDescription}
+                      multiline
+                      numberOfLines={4}
+                    />
+                  </View>
+
+                  {/* Points */}
+                  <View style={{ marginBottom: 20 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>
+                      Points *
+                    </Text>
+                    <View style={{ position: 'relative' }}>
+                      {pointType === 'deduct' && (
+                        <Text style={{
+                          position: 'absolute',
+                          left: 12,
+                          top: 12,
+                          fontSize: 16,
+                          color: '#ef4444',
+                          fontWeight: '600',
+                          zIndex: 1
+                        }}>
+                          -
+                        </Text>
+                      )}
+                      <TextInput
+                        style={{
+                          borderWidth: 1,
+                          borderColor: '#d1d5db',
+                          borderRadius: 12,
+                          padding: 12,
+                          paddingLeft: pointType === 'deduct' ? 24 : 12,
+                          fontSize: 16,
+                          color: '#111827'
+                        }}
+                        placeholder="Enter points"
+                        placeholderTextColor="#9ca3af"
+                        value={pointType === 'deduct' ? requestedPoints.replace('-', '') : requestedPoints}
+                        onChangeText={handlePointsChange}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                    <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                      {pointType === 'add' ? 'Enter positive value' : 'Enter value (will be deducted)'}
+                    </Text>
+                  </View>
+
+                  {/* Submit Button */}
+                  <TouchableOpacity
+                    onPress={handleSubmitRequest}
+                    disabled={isSubmittingRequest}
+                    style={{
+                      backgroundColor: isSubmittingRequest ? '#9ca3af' : '#10b981',
+                      paddingVertical: 14,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      marginTop: 10
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
+                      {isSubmittingRequest ? 'Loading...' : 'Update Points'}
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+            </View>
+          </Modal>
 
           <BottomNav />
         </View>
@@ -557,18 +917,6 @@ const ClassManagementScreen = () => {
                   />
                 </View>
 
-                <View className="mb-6">
-                  <Text className="text-gray-700 mb-2">Maximum Capacity (Optional)</Text>
-                  <TextInput
-                    className="border border-gray-300 rounded-lg p-3"
-                    placeholder="e.g., 50"
-                    value={maxCapacity}
-                    onChangeText={setMaxCapacity}
-                    keyboardType="numeric"
-                  />
-                  <Text className="text-gray-500 text-xs mt-1">Leave empty for unlimited capacity</Text>
-                </View>
-
                 <View className="flex-row">
                   <TouchableOpacity
                     className="flex-1 bg-gray-200 py-3 rounded-lg items-center mr-2"
@@ -579,7 +927,6 @@ const ClassManagementScreen = () => {
                       setDepartment('');
                       setSemester('');
                       setAcademicYear('');
-                      setMaxCapacity('');
                     }}
                   >
                     <Text className="text-gray-700 font-bold">Cancel</Text>
