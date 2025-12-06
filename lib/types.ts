@@ -48,6 +48,7 @@ export interface Class {
   advisor_id: string | null;
   total_students: number; // Maximum capacity
   current_enrollment: number; // Current enrolled count
+  is_open: boolean; // Whether class is accepting new enrollments
   created_at: string;
   updated_at: string;
 }
