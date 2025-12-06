@@ -1,36 +1,18 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClasses } from '@/contexts/ClassContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Award, Bell, BookOpen, LogOut, Mail, Plus, Shield, User, X } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { Alert, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Award, Bell, LogOut, Mail, Shield, User, ArrowLeft } from 'lucide-react-native';
+import React from 'react';
+import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
-  const { joinClassByCode, loading } = useClasses();
   const router = useRouter();
   const isAdvisor = user?.role === 'advisor';
-  const [showJoinClassModal, setShowJoinClassModal] = useState(false);
-  const [classCode, setClassCode] = useState('');
-
-  const handleJoinClass = async () => {
-    if (!classCode.trim()) {
-      Alert.alert('Error', 'Please enter a class code');
-      return;
-    }
-
-    const result = await joinClassByCode(classCode.trim().toUpperCase());
-    
-    if (result.success) {
-      setClassCode('');
-      setShowJoinClassModal(false);
-      Alert.alert('Success', result.message);
-    } else {
-      Alert.alert('Error', result.message);
-    }
-  };
+  
+  // Check if staff has no classes (accessed from joinClass page)
+  const hasNoClasses = user?.role === 'staff' && (!user?.joinedClasses || user.joinedClasses.length === 0);
 
   const handleLogout = () => {
     Alert.alert(
