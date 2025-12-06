@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS classes (
     advisor_id UUID REFERENCES users(id) ON DELETE SET NULL,
     total_students INTEGER DEFAULT 0, -- Maximum capacity
     current_enrollment INTEGER DEFAULT 0, -- Current enrolled count
+    is_open BOOLEAN DEFAULT true, -- Whether class is accepting new enrollments
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
