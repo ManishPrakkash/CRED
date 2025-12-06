@@ -34,7 +34,7 @@ export default function JoinClassScreen() {
       setJoinCode('');
       Alert.alert('Success', 'Class joined successfully! It has been added to your class list below.');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to join class');
+      Alert.alert('Alert', error.message || 'Failed to join class');
     } finally {
       setIsJoining(false);
     }
