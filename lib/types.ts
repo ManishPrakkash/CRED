@@ -87,6 +87,9 @@ export interface Request {
   studentId?: string;
   staffName?: string;
   staffId?: string;
+  target_staff_id?: string | null;
+  target_staff_name?: string | null;
+  is_peer_request?: boolean;
   points: number;
   type: 'add' | 'subtract';
   reason: string;
