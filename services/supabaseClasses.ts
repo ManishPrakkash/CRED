@@ -141,7 +141,16 @@ export const joinClassByCode = async (
       };
     }
 
-    // 2. Check if class is at maximum capacity
+    // 2. Check if class enrollment is open
+    if (!classData.is_open) {
+      return {
+        success: false,
+        class: classData,
+        message: 'This class is currently closed for enrollment. Please contact your advisor.',
+      };
+    }
+
+    // 3. Check if class is at maximum capacity (if set)
     if (classData.total_students > 0 && classData.current_enrollment >= classData.total_students) {
       return {
         success: false,
@@ -150,7 +159,7 @@ export const joinClassByCode = async (
       };
     }
 
-    // 3. Get current user's joined_classes
+    // 4. Get current user's joined_classes
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('joined_classes')
@@ -164,7 +173,7 @@ export const joinClassByCode = async (
 
     const currentJoinedClasses = (userData?.joined_classes || []) as JoinedClass[];
 
-    // 4. Check if already joined
+    // 5. Check if already joined
     const alreadyJoined = currentJoinedClasses.some(
       (jc: JoinedClass) => jc.class_id === classData.id
     );
@@ -177,7 +186,7 @@ export const joinClassByCode = async (
       };
     }
 
-    // 5. Add class to user's joined_classes
+    // 6. Add class to user's joined_classes
     const newJoinedClass: JoinedClass = {
       class_id: classData.id,
       class_code: classData.class_code,
@@ -233,11 +242,17 @@ export const getStaffClasses = async (staffId: string): Promise<JoinedClass[]> =
       .from('users')
       .select('joined_classes')
       .eq('id', staffId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Get staff classes error:', error);
       throw new Error(error.message || 'Failed to fetch joined classes');
+    }
+
+    // Return empty array if user not found or has no classes
+    if (!data) {
+      console.log('User not found or has no joined classes');
+      return [];
     }
 
     const joinedClasses = (data?.joined_classes || []) as JoinedClass[];
@@ -533,10 +548,16 @@ export const getStaffCredPoints = async (staffId: string): Promise<number> => {
       .from('users')
       .select('cred_points')
       .eq('id', staffId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Get staff CRED points error:', error);
+      return 0;
+    }
+
+    // Return 0 if user not found
+    if (!data) {
+      console.log('User not found, returning 0 CRED points');
       return 0;
     }
 
@@ -629,6 +650,58 @@ export const leaveClass = async (
     return {
       success: false,
       message: error.message || 'Failed to leave class',
+    };
+  }
+};
+
+/**
+ * Toggle class enrollment status (open/close)
+ * @param classId - The class ID
+ * @param advisorId - The advisor's user ID
+ * @param isOpen - Whether the class should be open for enrollment
+ */
+export const toggleClassEnrollment = async (
+  classId: string,
+  advisorId: string,
+  isOpen: boolean
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    // Verify the advisor owns this class
+    const { data: classData, error: fetchError } = await supabase
+      .from('classes')
+      .select('advisor_id')
+      .eq('id', classId)
+      .single();
+
+    if (fetchError) {
+      throw new Error('Class not found');
+    }
+
+    if (classData.advisor_id !== advisorId) {
+      throw new Error('You do not have permission to modify this class');
+    }
+
+    // Update the is_open status
+    const { error: updateError } = await supabase
+      .from('classes')
+      .update({ is_open: isOpen })
+      .eq('id', classId);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    return {
+      success: true,
+      message: isOpen 
+        ? 'Class is now open for enrollment' 
+        : 'Class enrollment has been closed',
+    };
+  } catch (error: any) {
+    console.error('Toggle class enrollment error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to update class status',
     };
   }
 };
