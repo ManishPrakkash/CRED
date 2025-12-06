@@ -74,8 +74,8 @@ export default function AdvisorRequest() {
     if (!selectedRequest) return;
 
     const points = parseInt(adjustedPoints);
-    if (isNaN(points) || points <= 0) {
-      Alert.alert('Invalid Points', 'Please enter a valid positive number');
+    if (isNaN(points) || points === 0) {
+      Alert.alert('Invalid Points', 'Please enter a valid number (cannot be zero)');
       return;
     }
 
@@ -95,7 +95,11 @@ export default function AdvisorRequest() {
 
       if (result.success) {
         await decrementPendingCount();
-        Alert.alert('Success', `Request approved! ${selectedRequest.staff?.name} received ${points} CRED points.`);
+        const action = points > 0 ? 'received' : 'deducted';
+        const targetName = selectedRequest.is_peer_request 
+          ? selectedRequest.target_staff?.name 
+          : selectedRequest.staff?.name;
+        Alert.alert('Success', `Request approved! ${targetName} ${action} ${Math.abs(points)} CRED points.`);
         await loadRequests();
       } else {
         Alert.alert('Error', result.message);
@@ -210,13 +214,30 @@ export default function AdvisorRequest() {
                 <User size={20} color="#10b981" />
               </View>
               <View className="ml-3 flex-1">
-                <Text className="font-bold text-gray-900">{item.staff?.name || 'Unknown'}</Text>
-                <Text className="text-gray-500 text-sm">{item.staff?.employee_id || item.staff?.email}</Text>
+                {item.is_peer_request ? (
+                  <>
+                    <Text className="font-bold text-gray-900">
+                      {item.staff?.name} requested for {item.target_staff?.name}
+                    </Text>
+                    <Text className="text-gray-500 text-sm">
+                      Points will go to: {item.target_staff?.employee_id || item.target_staff?.email}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text className="font-bold text-gray-900">{item.staff?.name || 'Unknown'}</Text>
+                    <Text className="text-gray-500 text-sm">{item.staff?.employee_id || item.staff?.email}</Text>
+                  </>
+                )}
               </View>
             </View>
-            <View className="px-3 py-1 rounded-full self-start bg-green-100">
-              <Text className="text-sm font-bold text-green-700">
-                +{item.requested_points} points requested
+            <View className={`px-3 py-1 rounded-full self-start ${
+              item.requested_points >= 0 ? 'bg-green-100' : 'bg-red-100'
+            }`}>
+              <Text className={`text-sm font-bold ${
+                item.requested_points >= 0 ? 'text-green-700' : 'text-red-700'
+              }`}>
+                {item.requested_points >= 0 ? '+' : ''}{item.requested_points} points requested
               </Text>
             </View>
           </View>
@@ -276,8 +297,21 @@ export default function AdvisorRequest() {
       <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
-            <Text className="font-bold text-gray-900">{item.staff?.name || 'Unknown'}</Text>
-            <Text className="text-gray-500 text-sm mb-2">{item.staff?.employee_id || item.staff?.email}</Text>
+            {item.is_peer_request ? (
+              <>
+                <Text className="font-bold text-gray-900">
+                  {item.staff?.name} requested for {item.target_staff?.name}
+                </Text>
+                <Text className="text-gray-500 text-sm mb-2">
+                  Points given to: {item.target_staff?.employee_id || item.target_staff?.email}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text className="font-bold text-gray-900">{item.staff?.name || 'Unknown'}</Text>
+                <Text className="text-gray-500 text-sm mb-2">{item.staff?.employee_id || item.staff?.email}</Text>
+              </>
+            )}
             <View className="bg-gray-50 rounded-lg p-3 mb-2">
               <Text className="text-gray-800">{item.work_description}</Text>
             </View>
