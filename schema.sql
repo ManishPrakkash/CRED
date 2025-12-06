@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS requests (
     staff_id UUID REFERENCES users(id) ON DELETE CASCADE,
     advisor_id UUID REFERENCES users(id) ON DELETE SET NULL,
     class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+    target_staff_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    is_peer_request BOOLEAN DEFAULT FALSE,
     work_description TEXT NOT NULL,
     requested_points INTEGER NOT NULL,
     status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'correction')),
