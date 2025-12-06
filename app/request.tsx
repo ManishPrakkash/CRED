@@ -1,11 +1,22 @@
 import AdvisorRequest from '@/components/requests/AdvisorRequest';
 import StaffRequest from '@/components/requests/RepresentativeRequest';
 import { useAuth } from '@/contexts/AuthContext';
-import React from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useCallback } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 export default function RequestManagementScreen() {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  // Redirect staff without active class to joinClass page
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.role === 'staff' && !user?.currentClassId) {
+        router.replace('/joinClass');
+      }
+    }, [user?.role, user?.currentClassId, router])
+  );
 
   if (isLoading) {
     return (
