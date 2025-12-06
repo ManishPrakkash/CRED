@@ -7,8 +7,8 @@ export interface Notification {
   type: 'request_submitted' | 'request_approved' | 'request_rejected' | 'request_correction';
   title: string;
   message: string;
-  requestId: string;
-  fromUserId: string;
+  requestId?: string;
+  fromUserId?: string;
   fromUserName: string;
   read: boolean;
   createdAt: string;
