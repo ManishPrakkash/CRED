@@ -10,6 +10,15 @@ export interface CreateRequestParams {
   requested_points: number;
 }
 
+export interface RequestFilters {
+  staff_id?: string;
+  advisor_id?: string;
+  class_id?: string;
+  status?: 'pending' | 'approved' | 'rejected' | 'correction';
+  date_from?: string;
+  date_to?: string;
+}
+
 export interface UpdateRequestParams {
   status: 'approved' | 'rejected' | 'correction';
   response_message?: string;
@@ -524,5 +533,120 @@ export const updateAndResubmitRequest = async (
   } catch (error: any) {
     console.error('[updateAndResubmitRequest] Exception:', error);
     return { success: false, message: error.message || 'Failed to update request', request: null };
+  }
+};
+
+/**
+ * Get requests with filtering
+ */
+export const getRequests = async (filters?: RequestFilters) => {
+  try {
+    console.log('[getRequests] Fetching requests with filters:', filters);
+
+    let query = supabase
+      .from('requests')
+      .select(`
+        *,
+        staff:staff_id (
+          id,
+          name,
+          email,
+          employee_id
+        ),
+        advisor:advisor_id (
+          id,
+          name,
+          email
+        ),
+        class:class_id (
+          id,
+          class_name,
+          class_code
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (filters) {
+      if (filters.staff_id) {
+        query = query.eq('staff_id', filters.staff_id);
+      }
+      if (filters.advisor_id) {
+        query = query.eq('advisor_id', filters.advisor_id);
+      }
+      if (filters.class_id) {
+        query = query.eq('class_id', filters.class_id);
+      }
+      if (filters.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters.date_from) {
+        query = query.gte('created_at', filters.date_from);
+      }
+      if (filters.date_to) {
+        // Add one day to include the entire end date
+        const endDate = new Date(filters.date_to);
+        endDate.setDate(endDate.getDate() + 1);
+        query = query.lt('created_at', endDate.toISOString());
+      }
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[getRequests] Error:', error);
+      throw error;
+    }
+
+    console.log('[getRequests] Found', data?.length || 0, 'requests');
+    return data;
+  } catch (error: any) {
+    console.error('[getRequests] Exception:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get request statistics for a staff member
+ */
+export const getStaffRequestStats = async (staffId: string, dateFrom?: string, dateTo?: string) => {
+  try {
+    console.log('[getStaffRequestStats] Fetching stats for staff:', staffId);
+
+    let query = supabase
+      .from('requests')
+      .select('status, requested_points, approved_points')
+      .eq('staff_id', staffId);
+
+    if (dateFrom) {
+      query = query.gte('created_at', dateFrom);
+    }
+    if (dateTo) {
+      const endDate = new Date(dateTo);
+      endDate.setDate(endDate.getDate() + 1);
+      query = query.lt('created_at', endDate.toISOString());
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[getStaffRequestStats] Error:', error);
+      throw error;
+    }
+
+    const stats = {
+      total: data?.length || 0,
+      pending: data?.filter(r => r.status === 'pending').length || 0,
+      approved: data?.filter(r => r.status === 'approved').length || 0,
+      rejected: data?.filter(r => r.status === 'rejected').length || 0,
+      correction: data?.filter(r => r.status === 'correction').length || 0,
+      totalPointsRequested: data?.reduce((sum, r) => sum + r.requested_points, 0) || 0,
+      totalPointsApproved: data?.filter(r => r.status === 'approved').reduce((sum, r) => sum + (r.approved_points || 0), 0) || 0,
+    };
+
+    console.log('[getStaffRequestStats] Stats:', stats);
+    return stats;
+  } catch (error: any) {
+    console.error('[getStaffRequestStats] Exception:', error);
+    throw error;
   }
 };
