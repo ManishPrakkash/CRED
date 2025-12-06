@@ -240,7 +240,7 @@ export default function AdvisorRequest() {
               <Text className={`text-sm font-bold ${
                 item.requested_points >= 0 ? 'text-green-700' : 'text-red-700'
               }`}>
-                {item.requested_points >= 0 ? '+' : ''}{item.requested_points} points requested
+                {item.requested_points >= 0 ? '+' + item.requested_points : item.requested_points} points requested
               </Text>
             </View>
           </View>
