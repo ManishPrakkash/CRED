@@ -80,10 +80,19 @@ export default function JoinClassScreen() {
   const confirmLeave = async () => {
     if (classToLeave) {
       try {
+        const wasActiveClass = user?.currentClassId === classToLeave.id;
         await leaveClass(classToLeave.id);
         setShowLeaveModal(false);
         setClassToLeave(null);
-        Alert.alert('Success', `You have left ${classToLeave.name}. You can rejoin anytime if needed.`);
+        
+        // If leaving active class, stay on joinClass page (router.replace prevents back navigation)
+        if (wasActiveClass) {
+          Alert.alert('Success', `You have left ${classToLeave.name}. Please select another class or join a new one.`);
+          // Force stay on joinClass page by replacing navigation stack
+          router.replace('/joinClass');
+        } else {
+          Alert.alert('Success', `You have left ${classToLeave.name}. You can rejoin anytime if needed.`);
+        }
       } catch (error: any) {
         Alert.alert('Error', error.message || 'Failed to leave class');
       }
@@ -102,8 +111,21 @@ export default function JoinClassScreen() {
         colors={['#f59e0b', '#f97316']}
         className="pt-14 pb-8 px-6"
       >
-        <Text className="text-white text-3xl font-bold mt-2">My Classes</Text>
-        <Text className="text-white/90 text-sm mt-1">Join and select your class</Text>
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1 mt-2">
+            <Text className="text-white text-3xl font-bold">My Classes</Text>
+            <Text className="text-white/90 text-sm mt-1">Join and select your class</Text>
+          </View>
+          
+          {/* Profile Icon */}
+          <TouchableOpacity
+            onPress={() => router.push('/profile')}
+            className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mt-2"
+            activeOpacity={0.7}
+          >
+            <UserCircle size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
       <ScrollView className="flex-1 px-6 py-6" showsVerticalScrollIndicator={false}>
