@@ -88,7 +88,15 @@ export const getStaffRequests = async (staffId: string) => {
 
     const { data, error } = await supabase
       .from('requests')
-      .select('*')
+      .select(`
+        *,
+        target_staff:target_staff_id (
+          id,
+          name,
+          email,
+          employee_id
+        )
+      `)
       .eq('staff_id', staffId)
       .order('created_at', { ascending: false });
 
@@ -208,13 +216,21 @@ export const updateRequestStatus = async (requestId: string, params: UpdateReque
       .from('requests')
       .update(updateData)
       .eq('id', requestId)
-      .select()
+      .select(`
+        *,
+        advisor:advisor_id (
+          name
+        )
+      `)
       .single();
 
     if (error) {
       console.error('[updateRequestStatus] Error:', error);
       return { success: false, message: error.message, request: null };
     }
+
+    // Get advisor name for notification
+    const advisorName = (data as any).advisor?.name || 'Advisor';
 
     // Create notification for staff member
     const notificationType = 
@@ -244,7 +260,8 @@ export const updateRequestStatus = async (requestId: string, params: UpdateReque
         work_description: data.work_description,
         requested_points: data.requested_points,
         approved_points: params.approved_points,
-        response_message: params.response_message
+        response_message: params.response_message,
+        advisor_name: advisorName
       }
     });
 
@@ -528,7 +545,13 @@ export const updateAndResubmitRequest = async (
         updated_at: new Date().toISOString()
       })
       .eq('id', requestId)
-      .select()
+      .select(`
+        *,
+        staff:staff_id (
+          id,
+          name
+        )
+      `)
       .single();
 
     if (error) {
@@ -545,6 +568,7 @@ export const updateAndResubmitRequest = async (
       related_request_id: requestId,
       request_data: {
         staff_id: data.staff_id,
+        staff_name: data.staff?.name || 'Unknown Staff',
         work_description: workDescription,
         requested_points: requestedPoints,
         is_resubmission: true
