@@ -71,9 +71,9 @@ export default function StudentDashboard() {
         setRecentActivity(activities.map((activity: any) => ({
           id: activity.id,
           action: activity.description,
-          points: activity.points > 0 ? `+${activity.points}` : `${activity.points}`,
+          points: activity.activity_type === 'debit' ? `-${activity.points}` : `+${activity.points}`,
           time: formatTimeAgo(activity.created_at),
-          type: activity.points > 0 ? 'positive' : 'negative',
+          type: activity.activity_type === 'debit' ? 'negative' : 'positive',
         })));
 
         // Fetch pending requests
@@ -396,7 +396,9 @@ export default function StudentDashboard() {
                   <Text className="text-xs font-medium text-orange-700">Pending</Text>
                 </View>
               </View>
-              <Text className="text-orange-600 font-bold">+{request.points} points</Text>
+              <Text className="text-orange-600 font-bold">
+                {request.points >= 0 ? '+' : ''}{request.points} points
+              </Text>
             </View>
           ))}
         </View>
