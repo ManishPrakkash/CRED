@@ -187,8 +187,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(result.message);
     }
 
+    // Clear currentClassId if leaving the active class
+    const wasActiveClass = user.currentClassId === classId;
+    
     // Refresh user's joined classes from database
     await refreshJoinedClasses();
+    
+    // If user left their active class, clear currentClassId to force redirect
+    if (wasActiveClass) {
+      setUser((prev) => prev ? { ...prev, currentClassId: null } : null);
+    }
   };
 
   const addNotification = (notification: Omit<Notification, 'id' | 'createdAt'>) => {
