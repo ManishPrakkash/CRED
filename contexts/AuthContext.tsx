@@ -1,6 +1,8 @@
 import type { User, JoinedClass, Notification } from '@/lib/types';
-import { mockLogin } from '@/services/mockData';
+import { loginWithSupabase } from '@/services/supabaseAuth';
+import { joinClassByCode as joinClassService, getStaffClasses, validateAndCleanJoinedClasses, leaveClass as leaveClassService } from '@/services/supabaseClasses';
 import { NotificationService } from '@/services/notificationService';
+import { getUserNotifications, getUnreadCount, markAsRead, subscribeToNotifications } from '@/services/supabaseNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useState, useEffect } from 'react';
 
@@ -12,6 +14,8 @@ interface AuthContextType {
   joinClass: (joinCode: string) => Promise<void>;
   switchClass: (classId: string) => void;
   deleteClass: (classId: string) => void;
+  leaveClass: (classId: string) => Promise<void>;
+  refreshJoinedClasses: () => Promise<void>;
   hasJoinedClasses: boolean;
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void;
   markNotificationAsRead: (notificationId: string) => void;
@@ -39,6 +43,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       saveUserData(user);
     }
   }, [user]);
+
+  // Set up real-time notification subscription
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const subscription = subscribeToNotifications(user.id, (newNotification) => {
+      const mappedNotification: Notification = {
+        id: newNotification.id,
+        title: newNotification.title,
+        message: newNotification.message,
+        type: newNotification.type as any,
+        read: newNotification.read,
+        createdAt: newNotification.created_at,
+        requestId: newNotification.related_request_id || undefined,
+        requestData: newNotification.request_data,
+        fromUserName: newNotification.request_data?.advisor_name || newNotification.request_data?.staff_name || 'System'
+      };
+
+      setUser(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          notifications: [mappedNotification, ...(prev.notifications || [])]
+        };
+      });
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user?.id]);
 
   const loadUserData = async () => {
     try {
@@ -77,23 +112,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const userData = await mockLogin(email, password);
+      const userData = await loginWithSupabase(email, password);
       
-      // Load persistent data (joined classes) for this user
-      const persistentDataKey = `${USER_DATA_PREFIX}${userData.id}`;
-      const storedData = await AsyncStorage.getItem(persistentDataKey);
-      
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        // Restore joined classes but NOT currentClassId
-        // Staff must select class each time they log in
-        userData.joinedClasses = parsedData.joinedClasses || [];
-        userData.currentClassId = null; // Force them to select a class
+      // For staff users, load joined classes from database
+      if (userData.role === 'staff') {
+        try {
+          const joinedClasses = await getStaffClasses(userData.id);
+          userData.joinedClasses = joinedClasses;
+          // Set first class as active if available
+          userData.currentClassId = joinedClasses.length > 0 ? joinedClasses[0].class_id : null;
+        } catch (error) {
+          console.error('Failed to load joined classes:', error);
+          userData.joinedClasses = [];
+          userData.currentClassId = null;
+        }
       }
       
-      // Load notifications from NotificationService
-      const notifications = await NotificationService.getNotifications(userData.id);
-      userData.notifications = notifications;
+      // Load notifications from Supabase
+      try {
+        const notifications = await getUserNotifications(userData.id);
+        userData.notifications = notifications.map(n => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          type: n.type as any,
+          read: n.read,
+          createdAt: n.created_at,
+          requestId: n.related_request_id || undefined,
+          requestData: n.request_data,
+          fromUserName: n.request_data?.advisor_name || n.request_data?.staff_name || 'System'
+        }));
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+        userData.notifications = [];
+      }
       
       setUser(userData);
     } catch (error) {
@@ -119,29 +171,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Only staff can join classes');
     }
 
-    // Check if already joined this class
-    const existingClass = user.joinedClasses?.find(c => c.joinCode === joinCode);
-    if (existingClass) {
-      // Just switch to this class
-      switchClass(existingClass.id);
-      throw new Error('You have already joined this class. Switched to it.');
+    // Use Supabase service to validate and join class
+    const result = await joinClassService(user.id, joinCode.toUpperCase());
+    
+    if (!result.success) {
+      throw new Error(result.message);
     }
 
-    // Create new class entry
-    const newClass: JoinedClass = {
-      id: `class-${Date.now()}`,
-      name: `Class ${joinCode}`,
-      joinCode: joinCode,
-      joinedAt: new Date().toISOString(),
-    };
+    // Refresh user's joined classes from database
+    await refreshJoinedClasses();
+  };
 
-    const updatedUser = {
-      ...user,
-      joinedClasses: [...(user.joinedClasses || []), newClass],
-      currentClassId: newClass.id,
-    };
+  const refreshJoinedClasses = async () => {
+    if (!user || user.role !== 'staff') return;
 
-    setUser(updatedUser);
+    try {
+      // Just get the current joined classes without cleaning
+      const joinedClasses = await getStaffClasses(user.id);
+      setUser({
+        ...user,
+        joinedClasses,
+        // Set first class as active if none selected
+        currentClassId: user.currentClassId || (joinedClasses.length > 0 ? joinedClasses[0].class_id : null),
+      });
+    } catch (error) {
+      console.error('Failed to refresh joined classes:', error);
+    }
   };
 
   const switchClass = (classId: string) => {
@@ -156,7 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteClass = (classId: string) => {
     if (!user) return;
     
-    const updatedClasses = user.joinedClasses?.filter(c => c.id !== classId) || [];
+    const updatedClasses = user.joinedClasses?.filter(c => c.class_id !== classId) || [];
     const updatedUser = {
       ...user,
       joinedClasses: updatedClasses,
@@ -165,6 +220,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     
     setUser(updatedUser);
+  };
+
+  const leaveClass = async (classId: string) => {
+    if (!user || user.role !== 'staff') {
+      throw new Error('Only staff can leave classes');
+    }
+
+    // Use Supabase service to leave class
+    const result = await leaveClassService(user.id, classId);
+    
+    if (!result.success) {
+      throw new Error(result.message);
+    }
+
+    // Clear currentClassId if leaving the active class
+    const wasActiveClass = user.currentClassId === classId;
+    
+    // Refresh user's joined classes from database
+    await refreshJoinedClasses();
+    
+    // If user left their active class, clear currentClassId to force redirect
+    if (wasActiveClass) {
+      setUser((prev) => prev ? { ...prev, currentClassId: null } : null);
+    }
   };
 
   const addNotification = (notification: Omit<Notification, 'id' | 'createdAt'>) => {
@@ -185,6 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const markNotificationAsRead = async (notificationId: string) => {
     if (!user) return;
 
+    // Optimistically update UI
     const updatedNotifications = user.notifications?.map(n =>
       n.id === notificationId ? { ...n, read: true } : n
     ) || [];
@@ -194,24 +274,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       notifications: updatedNotifications,
     });
 
-    // Update in AsyncStorage
-    await NotificationService.markAsRead(user.id, notificationId);
+    // Update in Supabase database
+    await markAsRead(notificationId);
+    
+    // Refresh notifications from database to ensure sync
+    await refreshNotifications();
   };
 
   const markNotificationAsReadByRequestId = async (requestId: string) => {
     if (!user) return;
 
-    const updatedNotifications = user.notifications?.map(n =>
-      n.requestId === requestId ? { ...n, read: true } : n
-    ) || [];
+    // Find notification by requestId and mark as read
+    const notification = user.notifications?.find(n => n.requestId === requestId);
+    if (notification) {
+      await markNotificationAsRead(notification.id);
+    }
+  };
 
-    setUser({
-      ...user,
-      notifications: updatedNotifications,
-    });
+  const refreshNotifications = async () => {
+    if (!user?.id) return;
 
-    // Update in AsyncStorage
-    await NotificationService.markAsReadByRequestId(user.id, requestId);
+    try {
+      const notifications = await getUserNotifications(user.id);
+      const mappedNotifications: Notification[] = notifications.map(n => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        type: n.type as any,
+        read: n.read,
+        createdAt: n.created_at,
+        requestId: n.related_request_id || undefined,
+        requestData: n.request_data,
+        fromUserName: n.request_data?.advisor_name || n.request_data?.staff_name || 'System'
+      }));
+
+      setUser({
+        ...user,
+        notifications: mappedNotifications,
+      });
+    } catch (error) {
+      console.error('[refreshNotifications] Failed to refresh:', error);
+    }
   };
 
   const unreadCount = user?.notifications?.filter(n => !n.read).length || 0;
@@ -226,7 +329,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading, 
       joinClass, 
       switchClass, 
-      deleteClass, 
+      deleteClass,
+      leaveClass,
+      refreshJoinedClasses,
       hasJoinedClasses,
       addNotification,
       markNotificationAsRead,

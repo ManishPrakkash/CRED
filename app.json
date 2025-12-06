@@ -1,5 +1,6 @@
 {
   "expo": {
+    "owner": "keerthiaanand",
     "name": "cred",
     "slug": "cred",
     "version": "1.0.0",
@@ -28,7 +29,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e1fafa8d-2fb5-43e7-b67d-f110b7436010"
+        "projectId": "1b3a02aa-4dd2-45bc-8493-8f7de5ebdddd"
       }
     }
   }

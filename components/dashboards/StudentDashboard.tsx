@@ -1,5 +1,6 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
+import { getStaffCredPoints } from '@/services/supabaseClasses';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
@@ -12,33 +13,125 @@ import {
     Plus,
     TrendingUp
 } from 'lucide-react-native';
-import React from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { getUserActivities } from '@/services/supabaseActivities';
+import { getRequests, getStaffRequestStats } from '@/services/supabaseRequests';
 
 export default function StudentDashboard() {
   const router = useRouter();
   const { user, unreadCount } = useAuth();
+  const [credPoints, setCredPoints] = useState<number>(0);
+  const [isLoadingPoints, setIsLoadingPoints] = useState(true);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    thisMonth: 0,
+    pendingCount: 0,
+    approvedCount: 0,
+    rejectedCount: 0,
+  });
   
-  const currentClass = user?.joinedClasses?.find(c => c.id === user.currentClassId);
+  const currentClass = user?.joinedClasses?.find(c => c.class_id === user.currentClassId);
+
+  // Fetch CRED points on mount and when user changes
+  useEffect(() => {
+    const fetchPoints = async () => {
+      if (user?.id && user.role === 'staff') {
+        setIsLoadingPoints(true);
+        const points = await getStaffCredPoints(user.id);
+        setCredPoints(points);
+        setIsLoadingPoints(false);
+      }
+    };
+
+    fetchPoints();
+
+    // Refresh points every 30 seconds
+    const interval = setInterval(fetchPoints, 30000);
+
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  // Fetch dashboard data from database
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+
+        // Get current month start date
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        // Fetch recent activities
+        const activities = await getUserActivities(user.id, 5);
+        setRecentActivity(activities.map((activity: any) => ({
+          id: activity.id,
+          action: activity.description,
+          points: activity.points > 0 ? `+${activity.points}` : `${activity.points}`,
+          time: formatTimeAgo(activity.created_at),
+          type: activity.points > 0 ? 'positive' : 'negative',
+        })));
+
+        // Fetch pending requests
+        const pending = await getRequests({ 
+          staff_id: user.id, 
+          status: 'pending' 
+        });
+        setPendingRequests(pending.map((req: any) => ({
+          id: req.id,
+          work: req.work_description,
+          points: req.requested_points,
+          status: req.status,
+          time: formatTimeAgo(req.created_at),
+        })));
+
+        // Fetch monthly stats
+        const monthlyStats = await getStaffRequestStats(user.id, monthStart);
+        setStats({
+          thisMonth: monthlyStats.totalPointsApproved,
+          pendingCount: monthlyStats.pending,
+          approvedCount: monthlyStats.approved,
+          rejectedCount: monthlyStats.rejected,
+        });
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+
+    // Refresh dashboard every 60 seconds
+    const interval = setInterval(fetchDashboardData, 60000);
+
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
 
   const staffStats = [
-    { title: 'Total Points', value: '850', icon: <Award size={20} color="#f59e0b" />, color: 'bg-orange-50' },
-    { title: 'This Month', value: '+120', icon: <TrendingUp size={20} color="#10b981" />, color: 'bg-green-50' },
-    { title: 'Pending Requests', value: '3', icon: <Clock size={20} color="#2563eb" />, color: 'bg-blue-50' },
-  ];
-
-  const recentActivity = [
-    { id: 1, action: 'Lab equipment maintenance completed', points: '+50', time: '2 hours ago', type: 'positive' },
-    { id: 2, action: 'Student counseling session', points: '+30', time: '1 day ago', type: 'positive' },
-    { id: 3, action: 'Late report submission', points: '-10', time: '2 days ago', type: 'negative' },
-    { id: 4, action: 'Extra workshop conducted', points: '+40', time: '3 days ago', type: 'positive' },
-    { id: 5, action: 'Department event organized', points: '+60', time: '4 days ago', type: 'positive' },
-  ];
-
-  const pendingRequests = [
-    { id: 1, work: 'Lab equipment setup', points: 50, status: 'pending', time: '2 hours ago' },
-    { id: 2, work: 'Student mentoring session', points: 30, status: 'pending', time: '1 day ago' },
-    { id: 3, work: 'Department documentation', points: 25, status: 'pending', time: '2 days ago' },
+    { title: 'Total Points', value: credPoints.toString(), icon: <Award size={20} color="#f59e0b" />, color: 'bg-orange-50' },
+    { title: 'This Month', value: `+${stats.thisMonth}`, icon: <TrendingUp size={20} color="#10b981" />, color: 'bg-green-50' },
+    { title: 'Pending Requests', value: stats.pendingCount.toString(), icon: <Clock size={20} color="#2563eb" />, color: 'bg-blue-50' },
   ];
 
   return (
@@ -49,7 +142,12 @@ export default function StudentDashboard() {
         className="px-6 pt-10 pb-4 rounded-b-2xl"
       >
         <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-white text-xl font-bold">{user?.name}</Text>
+          <View>
+            <Text className="text-white text-xl font-bold">{user?.name}</Text>
+            {currentClass?.advisor_name && (
+              <Text className="text-white/80 text-sm mt-0.5">Advisor: {currentClass.advisor_name}</Text>
+            )}
+          </View>
           <TouchableOpacity 
             className="p-2 bg-white/20 rounded-lg relative"
             onPress={() => router.push('/notifications')}
@@ -72,14 +170,18 @@ export default function StudentDashboard() {
             <BookOpen size={16} color="rgba(255,255,255,0.9)" />
             <Text className="text-white/90 text-xs font-medium mt-1">CLASS</Text>
             <Text className="text-white text-base font-bold mt-0.5" numberOfLines={1}>
-              {currentClass?.name || 'None'}
+              {currentClass?.class_name || 'None'}
             </Text>
           </TouchableOpacity>
           
           <View className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30">
             <Award size={16} color="rgba(255,255,255,0.9)" />
             <Text className="text-white/90 text-xs font-medium mt-1">POINTS</Text>
-            <Text className="text-white text-xl font-bold mt-0.5">850</Text>
+            {isLoadingPoints ? (
+              <ActivityIndicator size="small" color="white" style={{ marginTop: 2 }} />
+            ) : (
+              <Text className="text-white text-xl font-bold mt-0.5">{credPoints}</Text>
+            )}
           </View>
         </View>
       </LinearGradient>
@@ -217,7 +319,7 @@ export default function StudentDashboard() {
           <View className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30">
             <Award size={16} color="rgba(255,255,255,0.9)" />
             <Text className="text-white/90 text-xs font-medium mt-1">POINTS</Text>
-            <Text className="text-white text-sm font-bold mt-0.5">850</Text>
+            <Text className="text-white text-sm font-bold mt-0.5">{credPoints}</Text>
           </View>
         </View>
       </LinearGradient> */}
@@ -337,24 +439,28 @@ export default function StudentDashboard() {
         {/* Performance Summary */}
         <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm">
           <Text className="text-gray-900 font-bold text-lg mb-4">This Month's Summary</Text>
-          <View className="space-y-3">
-            <View className="flex-row items-center justify-between py-2">
-              <Text className="text-gray-600">Total Earned</Text>
-              <Text className="text-gray-900 font-bold">850 points</Text>
+          {loading ? (
+            <ActivityIndicator size="small" color="#f59e0b" />
+          ) : (
+            <View className="space-y-3">
+              <View className="flex-row items-center justify-between py-2">
+                <Text className="text-gray-600">Total Earned</Text>
+                <Text className="text-gray-900 font-bold">{credPoints} points</Text>
+              </View>
+              <View className="flex-row items-center justify-between py-2 border-t border-gray-100">
+                <Text className="text-gray-600">Approved Requests</Text>
+                <Text className="text-green-600 font-bold">{stats.approvedCount}</Text>
+              </View>
+              <View className="flex-row items-center justify-between py-2 border-t border-gray-100">
+                <Text className="text-gray-600">Pending Review</Text>
+                <Text className="text-orange-600 font-bold">{stats.pendingCount}</Text>
+              </View>
+              <View className="flex-row items-center justify-between py-2 border-t border-gray-100">
+                <Text className="text-gray-600">Rejected</Text>
+                <Text className="text-red-600 font-bold">{stats.rejectedCount}</Text>
+              </View>
             </View>
-            <View className="flex-row items-center justify-between py-2 border-t border-gray-100">
-              <Text className="text-gray-600">Approved Requests</Text>
-              <Text className="text-green-600 font-bold">12</Text>
-            </View>
-            <View className="flex-row items-center justify-between py-2 border-t border-gray-100">
-              <Text className="text-gray-600">Pending Review</Text>
-              <Text className="text-orange-600 font-bold">3</Text>
-            </View>
-            <View className="flex-row items-center justify-between py-2 border-t border-gray-100">
-              <Text className="text-gray-600">Rejected</Text>
-              <Text className="text-red-600 font-bold">1</Text>
-            </View>
-          </View>
+          )}
         </View>
       </ScrollView>
 

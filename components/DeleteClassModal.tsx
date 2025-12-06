@@ -1,18 +1,26 @@
 import { AlertCircle, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface DeleteClassModalProps {
   visible: boolean;
-  className: string;
+  targetClassName: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export default function DeleteClassModal({ visible, className, onConfirm, onCancel }: DeleteClassModalProps) {
+export default function DeleteClassModal({ visible, targetClassName, onConfirm, onCancel }: DeleteClassModalProps) {
   const [inputText, setInputText] = useState('');
-  const deletePhrase = `delete ${className}`;
-  const isValid = inputText.trim() === deletePhrase;
+  
+  // Reset input when modal closes
+  useEffect(() => {
+    if (!visible) {
+      setInputText('');
+    }
+  }, [visible]);
+  
+  const deletePhrase = `delete ${targetClassName}`;
+  const isValid = targetClassName && targetClassName.trim() !== '' && inputText.trim() === deletePhrase;
 
   const handleConfirm = () => {
     if (isValid) {
@@ -54,7 +62,7 @@ export default function DeleteClassModal({ visible, className, onConfirm, onCanc
               To confirm deletion of this class, please type:
             </Text>
             <View className="bg-gray-100 rounded-lg p-3 mb-4">
-              <Text className="font-mono text-gray-900 font-bold">
+              <Text className="font-mono text-gray-900 font-bold" numberOfLines={2}>
                 {deletePhrase}
               </Text>
             </View>

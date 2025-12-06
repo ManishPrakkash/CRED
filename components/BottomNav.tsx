@@ -4,6 +4,7 @@ import { ClipboardList, Home, User as UserIcon, Users, Trophy } from 'lucide-rea
 import React, { useState, useEffect } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PENDING_REQUESTS_KEY = '@cred_pending_requests_count';
 const CORRECTION_REQUESTS_KEY = '@cred_correction_requests_count';
@@ -14,6 +15,7 @@ export default function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [pendingCount, setPendingCount] = useState(0);
   const [correctionCount, setCorrectionCount] = useState(0);
 
@@ -42,7 +44,7 @@ export default function BottomNav() {
   // role-aware visibility
   const canSeeRequests = user?.role === 'staff' || user?.role === 'advisor';
   const canSeeClasses = user?.role === 'advisor';
-  const canSeeLeaderboard = user?.role !== 'staff'; // Staff don't see leaderboard
+  const canSeeLeaderboard = true; // All roles can see leaderboard
 
   const totalRequests = pendingCount + correctionCount;
 
@@ -63,7 +65,10 @@ export default function BottomNav() {
   ];
 
   return (
-    <View className="flex-row items-center justify-around border-t border-gray-200 bg-white py-2 px-3">
+    <View 
+      className="flex-row items-center justify-around border-t border-gray-200 bg-white py-2 px-3"
+      style={{ paddingBottom: Math.max(insets.bottom, 8) }}
+    >
       {tabs.filter(t => t.visible).map((t) => {
         const Icon = t.icon;
         return (

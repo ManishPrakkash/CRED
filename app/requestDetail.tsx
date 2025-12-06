@@ -1,9 +1,9 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationService } from '@/services/notificationService';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, User, FileText, Calendar, Clock, Paperclip, CheckCircle, XCircle, AlertCircle } from 'lucide-react-native';
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { ArrowLeft, User, FileText, Calendar, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react-native';
+import React, { useState, useCallback } from 'react';
 import { ScrollView, Text, TextInput, TouchableOpacity, View, Alert, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -19,6 +19,15 @@ export default function RequestDetail() {
   const requestData = params.requestData ? JSON.parse(params.requestData as string) : null;
   const [correctionMessage, setCorrectionMessage] = useState('');
   const [showCorrectionInput, setShowCorrectionInput] = useState(false);
+
+  // Redirect staff without active class to joinClass page (only for staff role)
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.role === 'staff' && !user?.currentClassId) {
+        router.replace('/joinClass');
+      }
+    }, [user?.role, user?.currentClassId, router])
+  );
 
   if (!requestData) {
     return (
@@ -193,18 +202,6 @@ export default function RequestDetail() {
             <Text className="text-gray-800 leading-6">{requestData.workDescription}</Text>
           </View>
         </View>
-
-        {/* Attachments */}
-        {requestData.attachments > 0 && (
-          <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-            <View className="flex-row items-center">
-              <Paperclip size={18} color="#6b7280" />
-              <Text className="text-gray-700 ml-2">
-                {requestData.attachments} attachment{requestData.attachments > 1 ? 's' : ''}
-              </Text>
-            </View>
-          </View>
-        )}
 
         {/* Correction Input (only for advisor on pending requests) */}
         {isAdvisor && isPending && showCorrectionInput && (

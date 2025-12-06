@@ -2,7 +2,7 @@ import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Award, Bell, LogOut, Mail, Shield, User } from 'lucide-react-native';
+import { Award, Bell, LogOut, Mail, Shield, User, ArrowLeft } from 'lucide-react-native';
 import React from 'react';
 import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -10,6 +10,9 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const isAdvisor = user?.role === 'advisor';
+  
+  // Check if staff has no classes (accessed from joinClass page)
+  const hasNoClasses = user?.role === 'staff' && (!user?.joinedClasses || user.joinedClasses.length === 0);
 
   const handleLogout = () => {
     Alert.alert(
@@ -36,8 +39,23 @@ export default function ProfileScreen() {
         colors={isAdvisor ? ['#f59e0b', '#f97316'] : ['#2563eb', '#3b82f6']} 
         className="pt-12 pb-8 px-6 rounded-b-3xl"
       >
-        <Text className="text-2xl font-bold text-white">Profile</Text>
-        <Text className="text-white/90 mt-1">Manage your account settings</Text>
+        <View className="flex-row items-center">
+          {/* Back button - only show when staff has no classes */}
+          {hasNoClasses && (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mr-3"
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={24} color="#fff" />
+            </TouchableOpacity>
+          )}
+          
+          <View className="flex-1">
+            <Text className="text-2xl font-bold text-white">Profile</Text>
+            <Text className="text-white/90 mt-1">Manage your account settings</Text>
+          </View>
+        </View>
       </LinearGradient>
 
       <ScrollView className="flex-1 px-4 py-6">
@@ -84,7 +102,7 @@ export default function ProfileScreen() {
               </View>
               <View className="items-center flex-1 border-l border-gray-200">
                 <Text className="text-3xl font-bold text-green-600">74</Text>
-                <Text className="text-gray-500 text-sm mt-1">Students</Text>
+                <Text className="text-gray-500 text-sm mt-1">Staff</Text>
               </View>
               <View className="items-center flex-1 border-l border-gray-200">
                 <Text className="text-3xl font-bold text-orange-600">12</Text>
@@ -139,7 +157,8 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </ScrollView>
       
-      <BottomNav />
+      {/* Show BottomNav only if user is not staff OR if staff has at least one class */}
+      {(user?.role !== 'staff' || (user?.joinedClasses && user.joinedClasses.length > 0)) && <BottomNav />}
     </View>
   );
 }
