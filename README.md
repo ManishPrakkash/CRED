@@ -1,50 +1,262 @@
-# Welcome to your Expo app 👋
+# CRED Points Management System 🏆
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A modern mobile application built with React Native and Expo for managing CRED (Credit/Recognition/Engagement/Development) points in educational institutions. This system enables advisors to manage classes, staff to submit work requests, and provides real-time tracking of points and activities.
 
-## Get started
+## 📱 Features
 
-1. Install dependencies
+### For Staff Members
+- **Join Multiple Classes** - Enter class codes to join different classes managed by advisors
+- **Submit Work Requests** - Request CRED points for completed work with descriptions and attachments
+- **Track Points** - View current CRED points balance and monthly statistics
+- **Activity History** - Monitor request status (pending, approved, rejected) with detailed timeline
+- **Leaderboard** - Compare performance with peers in real-time rankings
+- **Notifications** - Receive instant updates on request approvals, rejections, and corrections
+- **Profile Management** - Manage account settings and view personal statistics
 
-   ```bash
-   npm install
-   ```
+### For Advisors (HOD)
+- **Class Management** - Create and manage multiple classes with unique join codes
+- **Request Review** - Approve, reject, or request corrections on staff submissions
+- **Performance Analytics** - View comprehensive statistics across all classes
+- **Staff Monitoring** - Track individual and class-wide performance metrics
+- **Bulk Operations** - Manage multiple requests efficiently
+- **Leaderboard Insights** - Monitor top performers and engagement levels
 
-2. Start the app
+## 🚀 Tech Stack
 
-   ```bash
-   npx expo start
-   ```
+- **Framework**: [Expo SDK 54](https://expo.dev) with React Native 0.81
+- **Language**: TypeScript
+- **Routing**: Expo Router (File-based routing)
+- **Styling**: NativeWind (Tailwind CSS for React Native)
+- **Backend**: [Supabase](https://supabase.com) (PostgreSQL database, Authentication)
+- **State Management**: React Context API
+- **Icons**: Lucide React Native
+- **UI Components**: Custom components with Linear Gradients
+- **Storage**: AsyncStorage for local data persistence
+- **Animations**: React Native Reanimated
 
-In the output, you'll find options to open the app in a
+## 📁 Project Structure
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+```
+CRED/
+├── app/                          # File-based routing screens
+│   ├── _layout.tsx              # Root layout with navigation guards
+│   ├── index.tsx                # Home/Dashboard router
+│   ├── login.tsx                # Authentication screen
+│   ├── joinClass.tsx            # Class joining interface
+│   ├── request.tsx              # Request management
+│   ├── requestDetail.tsx        # Detailed request view
+│   ├── leaderboard.tsx          # Leaderboard rankings
+│   ├── profile.tsx              # User profile
+│   ├── classManagement.tsx      # Advisor class management
+│   └── notifications.tsx        # Notification center
+├── components/                   # Reusable UI components
+│   ├── dashboards/
+│   │   ├── StudentDashboard.tsx # Staff dashboard
+│   │   ├── AdvisorDashboard.tsx # Advisor dashboard
+│   │   └── RepresentativeDashboard.tsx
+│   ├── requests/
+│   │   ├── RepresentativeRequest.tsx # Staff request submission
+│   │   └── AdvisorRequest.tsx   # Advisor request review
+│   ├── BottomNav.tsx            # Bottom navigation bar
+│   ├── ClassLeaderboard.tsx     # Class-specific leaderboard
+│   ├── DeleteClassModal.tsx     # Class deletion confirmation
+│   └── LeaveClassModal.tsx      # Leave class confirmation
+├── contexts/                     # React Context providers
+│   ├── AuthContext.tsx          # Authentication & user state
+│   └── ClassContext.tsx         # Class management state
+├── services/                     # Business logic & API calls
+│   ├── supabaseAuth.ts          # Authentication services
+│   ├── supabaseClasses.ts       # Class management
+│   ├── supabaseRequests.ts      # Request operations
+│   ├── supabaseActivities.ts    # Activity tracking
+│   └── notificationService.ts   # Notification handling
+├── lib/                          # Utilities & configurations
+│   ├── supabase.ts              # Supabase client setup
+│   ├── types.ts                 # TypeScript type definitions
+│   └── styles.ts                # Shared styles
+├── constants/                    # App constants
+│   └── theme.ts                 # Theme configuration
+└── schema.sql                    # Database schema
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🛠️ Installation & Setup
 
-## Learn more
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+- Expo CLI
+- Android Studio (for Android) or Xcode (for iOS)
+- Supabase account
 
-To learn more about developing your project with Expo, look at the following resources:
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd CRED
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 2. Install Dependencies
+```bash
+npm install
+```
 
-## Join the community
+### 3. Configure Supabase
+1. Create a new project on [Supabase](https://supabase.com)
+2. Run the SQL schema from `schema.sql` in your Supabase SQL editor
+3. Create a `.env` file in the root directory:
+```env
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-Join our community of developers creating universal apps.
+### 4. Start the Development Server
+```bash
+npm start
+# or
+npx expo start
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 5. Run on Device/Emulator
+- Press `a` for Android emulator
+- Press `i` for iOS simulator
+- Scan QR code with Expo Go app for physical device
+
+## 📊 Database Schema
+
+### Main Tables
+- **users** - User accounts (staff and advisors)
+- **classes** - Class information and join codes
+- **joined_classes** - Staff-class relationships
+- **requests** - Work request submissions
+- **activities** - Activity log for point changes
+- **notifications** - User notifications
+
+### Key Relationships
+- One advisor manages many classes
+- One class has many staff members
+- Staff can join multiple classes
+- Each request belongs to one staff and one class
+- Activities track all point-related events
+
+## 🎯 Key Features Explained
+
+### Smart Navigation Guards
+- Prevents unauthorized access to protected routes
+- Redirects staff without active class to join page
+- Disables back button on sensitive screens
+- Conditional bottom navigation based on user state
+
+### Real-time Updates
+- Auto-refresh dashboards every 60 seconds
+- Live notification badges
+- Instant CRED point updates
+- Dynamic leaderboard rankings
+
+### Secure Class Management
+- Unique join codes for each class
+- Class deletion with cascade operations
+- Staff can leave classes with confirmation
+- Prevents back navigation after leaving active class
+
+### Request Workflow
+1. Staff submits work request with description
+2. Advisor receives notification
+3. Advisor approves/rejects/requests correction
+4. Staff receives notification of decision
+5. Points automatically updated on approval
+6. Activity log created for transparency
+
+## 🔐 Authentication & Security
+
+- Email/password authentication via Supabase
+- Row-level security (RLS) policies on all tables
+- Secure API calls with JWT tokens
+- Role-based access control (staff/advisor)
+- Protected routes with navigation guards
+
+## 📱 Platform Support
+
+- ✅ Android
+- ✅ iOS
+- ⚠️ Web (limited support)
+
+## 🚧 Development Scripts
+
+```bash
+npm start          # Start Expo dev server
+npm run android    # Run on Android
+npm run ios        # Run on iOS
+npm run web        # Run on web browser
+npm run lint       # Run ESLint
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Metro bundler not starting:**
+```bash
+npx expo start --clear
+```
+
+**Supabase connection errors:**
+- Verify environment variables are set correctly
+- Check Supabase project status
+- Ensure RLS policies are configured
+
+**Navigation issues:**
+- Clear AsyncStorage: Check app settings
+- Restart the app completely
+- Check for active class selection
+
+**Bottom navigation overlay:**
+- Device uses 3-button navigation (automatic padding applied)
+- Safe area insets handle gesture navigation
+
+## 📈 Future Enhancements
+
+- [ ] Push notifications via Expo Notifications
+- [ ] File attachment support for requests
+- [ ] Export reports to PDF
+- [ ] Dark mode support
+- [ ] Multi-language support
+- [ ] Analytics dashboard for advisors
+- [ ] Gamification features
+- [ ] Social sharing of achievements
+
+## 👥 User Roles
+
+### Staff
+- Submit work requests
+- View personal dashboard
+- Track points and activities
+- Join/leave classes
+- View leaderboards
+
+### Advisor (HOD)
+- Create and manage classes
+- Review and process requests
+- Monitor staff performance
+- Generate reports
+- Manage class settings
+
+## 📄 License
+
+This project is private and confidential.
+
+## 🤝 Contributing
+
+This is a private project. For internal contributions, please follow the standard Git workflow:
+
+1. Create a feature branch
+2. Make your changes
+3. Submit a pull request
+4. Wait for code review
+
+## 📞 Support
+
+For issues or questions, please contact the development team.
+
+---
+
+**Built with ❤️ using Expo and React Native**
