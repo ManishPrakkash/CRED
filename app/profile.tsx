@@ -1,18 +1,47 @@
 import BottomNav from '@/components/BottomNav';
 import { useAuth } from '@/contexts/AuthContext';
+import { useClasses } from '@/contexts/ClassContext';
+import { getAdvisorPendingRequests } from '@/services/supabaseRequests';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Award, Bell, LogOut, Mail, Shield, User, ArrowLeft } from 'lucide-react-native';
-import React from 'react';
-import { Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Alert, Image, ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const { classes, getTotalStats } = useClasses();
   const router = useRouter();
   const isAdvisor = user?.role === 'advisor';
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const [loadingStats, setLoadingStats] = useState<boolean>(true);
   
   // Check if staff has no classes (accessed from joinClass page)
   const hasNoClasses = user?.role === 'staff' && (!user?.joinedClasses || user.joinedClasses.length === 0);
+
+  // Fetch advisor statistics
+  useEffect(() => {
+    if (user?.role === 'advisor') {
+      fetchAdvisorStats();
+    }
+  }, [user]);
+
+  const fetchAdvisorStats = async () => {
+    try {
+      setLoadingStats(true);
+      if (user?.id) {
+        const pendingRequests = await getAdvisorPendingRequests(user.id);
+        setPendingCount(pendingRequests?.length || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch advisor stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  // Get class and staff stats
+  const { totalClasses, totalStaff } = getTotalStats();
 
   const handleLogout = () => {
     Alert.alert(
@@ -83,10 +112,10 @@ export default function ProfileScreen() {
           >
             <Shield size={16} color={isAdvisor ? '#f59e0b' : '#2563eb'} />
             <Text 
-              className="font-semibold ml-2 capitalize"
+              className="font-semibold ml-2"
               style={{ color: isAdvisor ? '#ea580c' : '#2563eb' }}
             >
-              {user?.role}
+              {user?.role === 'advisor' ? 'HOD' : user?.role}
             </Text>
           </View>
         </View>
@@ -95,20 +124,26 @@ export default function ProfileScreen() {
         {user?.role === 'advisor' && (
           <View className="bg-white rounded-xl p-6 mb-6 shadow-sm">
             <Text className="text-lg font-bold text-gray-800 mb-4">Your Statistics</Text>
-            <View className="flex-row justify-between">
-              <View className="items-center flex-1">
-                <Text className="text-3xl font-bold text-blue-600">3</Text>
-                <Text className="text-gray-500 text-sm mt-1">Classes</Text>
+            {loadingStats ? (
+              <View className="py-6 items-center">
+                <ActivityIndicator size="large" color="#f59e0b" />
               </View>
-              <View className="items-center flex-1 border-l border-gray-200">
-                <Text className="text-3xl font-bold text-green-600">74</Text>
-                <Text className="text-gray-500 text-sm mt-1">Staff</Text>
+            ) : (
+              <View className="flex-row justify-between">
+                <View className="items-center flex-1">
+                  <Text className="text-3xl font-bold text-blue-600">{totalClasses}</Text>
+                  <Text className="text-gray-500 text-sm mt-1">Classes</Text>
+                </View>
+                <View className="items-center flex-1 border-l border-gray-200">
+                  <Text className="text-3xl font-bold text-green-600">{totalStaff}</Text>
+                  <Text className="text-gray-500 text-sm mt-1">Staff</Text>
+                </View>
+                <View className="items-center flex-1 border-l border-gray-200">
+                  <Text className="text-3xl font-bold text-orange-600">{pendingCount}</Text>
+                  <Text className="text-gray-500 text-sm mt-1">Pending</Text>
+                </View>
               </View>
-              <View className="items-center flex-1 border-l border-gray-200">
-                <Text className="text-3xl font-bold text-orange-600">12</Text>
-                <Text className="text-gray-500 text-sm mt-1">Pending</Text>
-              </View>
-            </View>
+            )}
           </View>
         )}
 
