@@ -2,6 +2,7 @@ import type { User, JoinedClass, Notification } from '@/lib/types';
 import { loginWithSupabase } from '@/services/supabaseAuth';
 import { joinClassByCode as joinClassService, getStaffClasses, validateAndCleanJoinedClasses, leaveClass as leaveClassService } from '@/services/supabaseClasses';
 import { NotificationService } from '@/services/notificationService';
+import { getUserNotifications, getUnreadCount, markAsRead, subscribeToNotifications } from '@/services/supabaseNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useState, useEffect } from 'react';
 
@@ -42,6 +43,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       saveUserData(user);
     }
   }, [user]);
+
+  // Set up real-time notification subscription
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const subscription = subscribeToNotifications(user.id, (newNotification) => {
+      const mappedNotification: Notification = {
+        id: newNotification.id,
+        title: newNotification.title,
+        message: newNotification.message,
+        type: newNotification.type as any,
+        read: newNotification.read,
+        createdAt: newNotification.created_at,
+        requestId: newNotification.related_request_id || undefined,
+        requestData: newNotification.request_data,
+        fromUserName: newNotification.request_data?.staff_name || 'System'
+      };
+
+      setUser(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          notifications: [mappedNotification, ...(prev.notifications || [])]
+        };
+      });
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user?.id]);
 
   const loadUserData = async () => {
     try {
@@ -96,9 +128,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      // Load notifications from NotificationService
-      const notifications = await NotificationService.getNotifications(userData.id);
-      userData.notifications = notifications;
+      // Load notifications from Supabase
+      try {
+        const notifications = await getUserNotifications(userData.id);
+        userData.notifications = notifications.map(n => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          type: n.type as any,
+          read: n.read,
+          createdAt: n.created_at,
+          requestId: n.related_request_id || undefined,
+          requestData: n.request_data,
+          fromUserName: n.request_data?.staff_name || 'System'
+        }));
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+        userData.notifications = [];
+      }
       
       setUser(userData);
     } catch (error) {
@@ -217,6 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const markNotificationAsRead = async (notificationId: string) => {
     if (!user) return;
 
+    // Optimistically update UI
     const updatedNotifications = user.notifications?.map(n =>
       n.id === notificationId ? { ...n, read: true } : n
     ) || [];
@@ -226,24 +274,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       notifications: updatedNotifications,
     });
 
-    // Update in AsyncStorage
-    await NotificationService.markAsRead(user.id, notificationId);
+    // Update in Supabase database
+    await markAsRead(notificationId);
+    
+    // Refresh notifications from database to ensure sync
+    await refreshNotifications();
   };
 
   const markNotificationAsReadByRequestId = async (requestId: string) => {
     if (!user) return;
 
-    const updatedNotifications = user.notifications?.map(n =>
-      n.requestId === requestId ? { ...n, read: true } : n
-    ) || [];
+    // Find notification by requestId and mark as read
+    const notification = user.notifications?.find(n => n.requestId === requestId);
+    if (notification) {
+      await markNotificationAsRead(notification.id);
+    }
+  };
 
-    setUser({
-      ...user,
-      notifications: updatedNotifications,
-    });
+  const refreshNotifications = async () => {
+    if (!user?.id) return;
 
-    // Update in AsyncStorage
-    await NotificationService.markAsReadByRequestId(user.id, requestId);
+    try {
+      const notifications = await getUserNotifications(user.id);
+      const mappedNotifications: Notification[] = notifications.map(n => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        type: n.type as any,
+        read: n.read,
+        createdAt: n.created_at,
+        requestId: n.related_request_id || undefined,
+        requestData: n.request_data,
+        fromUserName: n.request_data?.staff_name || 'System'
+      }));
+
+      setUser({
+        ...user,
+        notifications: mappedNotifications,
+      });
+    } catch (error) {
+      console.error('[refreshNotifications] Failed to refresh:', error);
+    }
   };
 
   const unreadCount = user?.notifications?.filter(n => !n.read).length || 0;
