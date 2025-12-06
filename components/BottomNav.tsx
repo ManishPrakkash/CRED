@@ -3,11 +3,8 @@ import { Href, usePathname, useRouter } from 'expo-router';
 import { ClipboardList, Home, User as UserIcon, Users, Trophy } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const PENDING_REQUESTS_KEY = '@cred_pending_requests_count';
-const CORRECTION_REQUESTS_KEY = '@cred_correction_requests_count';
+import { getAdvisorPendingRequests } from '@/services/supabaseRequests';
 
 type TabKey = 'home' | 'requests' | 'classes' | 'profile' | 'leaderboard';
 
@@ -16,28 +13,28 @@ export default function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const [pendingCount, setPendingCount] = useState(0);
-  const [correctionCount, setCorrectionCount] = useState(0);
+  const [advisorPendingCount, setAdvisorPendingCount] = useState(0);
 
-  // Load request counts
+  // Load advisor pending requests count from database
   useEffect(() => {
-    if (user?.role === 'advisor') {
-      loadRequestCounts();
+    if (user?.role === 'advisor' && user?.id) {
+      loadAdvisorPendingRequests();
       
-      // Set up interval to refresh counts
-      const interval = setInterval(loadRequestCounts, 2000);
+      // Refresh count every 5 seconds
+      const interval = setInterval(loadAdvisorPendingRequests, 5000);
       return () => clearInterval(interval);
     }
-  }, [user?.role, pathname]);
+  }, [user?.role, user?.id, pathname]);
 
-  const loadRequestCounts = async () => {
+  const loadAdvisorPendingRequests = async () => {
+    if (!user?.id) return;
+    
     try {
-      const pending = await AsyncStorage.getItem(PENDING_REQUESTS_KEY);
-      const correction = await AsyncStorage.getItem(CORRECTION_REQUESTS_KEY);
-      setPendingCount(pending ? parseInt(pending) : 0);
-      setCorrectionCount(correction ? parseInt(correction) : 0);
+      const requests = await getAdvisorPendingRequests(user.id);
+      setAdvisorPendingCount(requests?.length || 0);
     } catch (error) {
-      console.error('Failed to load request counts:', error);
+      console.error('Failed to load advisor pending requests:', error);
+      setAdvisorPendingCount(0);
     }
   };
 
@@ -45,8 +42,6 @@ export default function BottomNav() {
   const canSeeRequests = user?.role === 'staff' || user?.role === 'advisor';
   const canSeeClasses = user?.role === 'advisor';
   const canSeeLeaderboard = true; // All roles can see leaderboard
-
-  const totalRequests = pendingCount + correctionCount;
 
   const tabs: Array<{
     key: TabKey;
@@ -59,7 +54,7 @@ export default function BottomNav() {
   }> = [
     { key: 'home', label: 'Dashboard', href: '/' as Href, icon: Home, visible: true, active: pathname === '/' },
     { key: 'leaderboard', label: 'Leaderboard', href: '/leaderboard' as Href, icon: Trophy, visible: !!canSeeLeaderboard, active: pathname?.startsWith('/leaderboard') ?? false },
-    { key: 'requests', label: 'Requests', href: '/request' as Href, icon: ClipboardList, visible: !!canSeeRequests, active: pathname?.startsWith('/request') ?? false, badge: user?.role === 'advisor' ? totalRequests : undefined },
+    { key: 'requests', label: 'Requests', href: '/request' as Href, icon: ClipboardList, visible: !!canSeeRequests, active: pathname?.startsWith('/request') ?? false, badge: user?.role === 'advisor' ? advisorPendingCount : undefined },
     { key: 'classes', label: 'Classes', href: '/classManagement' as Href, icon: Users, visible: !!canSeeClasses, active: pathname?.startsWith('/classManagement') ?? false },
     { key: 'profile', label: 'Profile', href: '/profile' as Href, icon: UserIcon, visible: true, active: pathname?.startsWith('/profile') ?? false },
   ];
