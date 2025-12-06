@@ -4,8 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useClasses } from '@/contexts/ClassContext';
 import { supabase } from '@/lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { AlertCircle, Award, TrendingDown, TrendingUp, Trophy, Users, BookOpen } from 'lucide-react-native';
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 interface StaffMember {
@@ -20,6 +21,7 @@ interface StaffMember {
 export default function LeaderboardScreen() {
   const { user, isLoading } = useAuth();
   const { classes } = useClasses();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'green' | 'red'>('green');
   const [staffData, setStaffData] = useState<StaffMember[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
@@ -28,6 +30,15 @@ export default function LeaderboardScreen() {
 
   // For advisors, show class selection first
   const isAdvisor = user?.role === 'advisor';
+
+  // Redirect staff without active class to joinClass page
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.role === 'staff' && !user?.currentClassId) {
+        router.replace('/joinClass');
+      }
+    }, [user?.role, user?.currentClassId, router])
+  );
 
   // Fetch staff members with their CRED points
   useEffect(() => {
