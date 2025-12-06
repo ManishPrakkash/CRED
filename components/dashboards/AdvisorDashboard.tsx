@@ -139,8 +139,7 @@ export default function AdvisorDashboard() {
                   <View className="flex-1">
                     <Text className="text-gray-900 font-semibold text-sm">{cls.class_name}</Text>
                     <Text className="text-gray-500 text-xs mt-1">
-                      Code: {cls.class_code} • {cls.current_enrollment || 0}
-                      {cls.total_students > 0 ? `/${cls.total_students}` : ''} staff
+                      Code: {cls.class_code}
                     </Text>
                   </View>
                 </TouchableOpacity>
