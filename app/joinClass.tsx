@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { validateAndCleanJoinedClasses } from '@/services/supabaseClasses';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { BookOpen, CheckCircle, Plus, LogOut } from 'lucide-react-native';
+import { BookOpen, CheckCircle, Plus, LogOut, User } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -123,7 +123,7 @@ export default function JoinClassScreen() {
             className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mt-2"
             activeOpacity={0.7}
           >
-            <UserCircle size={24} color="#fff" />
+            <User size={24} color="#fff" />
           </TouchableOpacity>
         </View>
       </LinearGradient>
