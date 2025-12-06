@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         createdAt: newNotification.created_at,
         requestId: newNotification.related_request_id || undefined,
         requestData: newNotification.request_data,
-        fromUserName: newNotification.request_data?.staff_name || 'System'
+        fromUserName: newNotification.request_data?.advisor_name || newNotification.request_data?.staff_name || 'System'
       };
 
       setUser(prev => {
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           createdAt: n.created_at,
           requestId: n.related_request_id || undefined,
           requestData: n.request_data,
-          fromUserName: n.request_data?.staff_name || 'System'
+          fromUserName: n.request_data?.advisor_name || n.request_data?.staff_name || 'System'
         }));
       } catch (error) {
         console.error('Failed to load notifications:', error);
@@ -305,7 +305,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         createdAt: n.created_at,
         requestId: n.related_request_id || undefined,
         requestData: n.request_data,
-        fromUserName: n.request_data?.staff_name || 'System'
+        fromUserName: n.request_data?.advisor_name || n.request_data?.staff_name || 'System'
       }));
 
       setUser({
