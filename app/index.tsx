@@ -1,9 +1,9 @@
 ﻿import AdvisorDashboard from '@/components/dashboards/AdvisorDashboard';
 import StudentDashboard from '@/components/dashboards/StudentDashboard';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useEffect, useCallback } from 'react';
+import { ActivityIndicator, Text, View, BackHandler } from 'react-native';
 
 export default function HomeScreen() {
   const { user, isLoading, hasJoinedClasses } = useAuth();
@@ -15,6 +15,23 @@ export default function HomeScreen() {
       router.replace('/joinClass');
     }
   }, [user]);
+
+  // Prevent back navigation when staff has no active class
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.role === 'staff' && !user?.currentClassId) {
+        // Immediately redirect if trying to access without active class
+        router.replace('/joinClass');
+        
+        // Disable back button when on dashboard without active class
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+          return true; // Prevent default back action
+        });
+        
+        return () => backHandler.remove();
+      }
+    }, [user?.role, user?.currentClassId, router])
+  );
 
   if (isLoading) {
     return (
