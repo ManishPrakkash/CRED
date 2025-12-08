@@ -9,13 +9,16 @@ export interface SupabaseUser {
   name: string;
   role: 'staff' | 'advisor';
   avatar: string | null;
+  employee_id: string | null;
+  department: string | null;
+  phone: string | null;
   created_at: string;
   updated_at: string;
 }
 
 /**
- * Login user with Supabase database
- * Validates email and password against users table
+ * Login user with Supabase Auth
+ * Authenticates via auth.users and fetches profile from public.users
  */
 export const loginWithSupabase = async (
   email: string,
@@ -40,13 +43,13 @@ export const loginWithSupabase = async (
       throw new Error('Invalid email or password');
     }
 
-    // Convert to app User format
+    // Step 3: Convert to app User format
     const user: User = {
-      id: data.id,
-      email: data.email,
-      name: data.name,
-      role: data.role as 'staff' | 'advisor',
-      avatar: data.avatar || undefined,
+      id: profileData.id,
+      email: profileData.email,
+      name: profileData.name,
+      role: profileData.role as 'staff' | 'advisor',
+      avatar: profileData.avatar_url || undefined,
       joinedClasses: [],
       currentClassId: null,
       notifications: [],
