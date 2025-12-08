@@ -1,10 +1,11 @@
 import BottomNav from '@/components/BottomNav';
+import ChangePasswordModal from '@/components/ChangePasswordModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClasses } from '@/contexts/ClassContext';
 import { getAdvisorPendingRequests } from '@/services/supabaseRequests';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Award, Bell, LogOut, Mail, Shield, User, ArrowLeft } from 'lucide-react-native';
+import { LogOut, Shield, User, ArrowLeft, Lock } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { Alert, Image, ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 
@@ -15,6 +16,7 @@ export default function ProfileScreen() {
   const isAdvisor = user?.role === 'advisor';
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [loadingStats, setLoadingStats] = useState<boolean>(true);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   
   // Check if staff has no classes (accessed from joinClass page)
   const hasNoClasses = user?.role === 'staff' && (!user?.joinedClasses || user.joinedClasses.length === 0);
@@ -151,33 +153,16 @@ export default function ProfileScreen() {
         <View className="bg-white rounded-xl mb-6 shadow-sm overflow-hidden">
           <Text className="text-lg font-bold text-gray-800 p-4 pb-2">Account Settings</Text>
           
-          <TouchableOpacity className="flex-row items-center px-4 py-4 border-t border-gray-100">
-            <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center">
-              <Mail size={20} color="#2563eb" />
+          <TouchableOpacity 
+            onPress={() => setShowChangePasswordModal(true)}
+            className="flex-row items-center px-4 py-4 border-t border-gray-100"
+          >
+            <View className="w-10 h-10 rounded-full bg-purple-50 items-center justify-center">
+              <Lock size={20} color="#9333ea" />
             </View>
             <View className="flex-1 ml-3">
-              <Text className="text-gray-800 font-medium">Email Settings</Text>
-              <Text className="text-gray-500 text-sm">Manage your email preferences</Text>
-            </View>
-          </TouchableOpacity>
-          
-          <TouchableOpacity className="flex-row items-center px-4 py-4 border-t border-gray-100">
-            <View className="w-10 h-10 rounded-full bg-orange-50 items-center justify-center">
-              <Bell size={20} color="#f59e0b" />
-            </View>
-            <View className="flex-1 ml-3">
-              <Text className="text-gray-800 font-medium">Notifications</Text>
-              <Text className="text-gray-500 text-sm">Configure notification preferences</Text>
-            </View>
-          </TouchableOpacity>
-          
-          <TouchableOpacity className="flex-row items-center px-4 py-4 border-t border-gray-100">
-            <View className="w-10 h-10 rounded-full bg-green-50 items-center justify-center">
-              <Award size={20} color="#10b981" />
-            </View>
-            <View className="flex-1 ml-3">
-              <Text className="text-gray-800 font-medium">CredPoints History</Text>
-              <Text className="text-gray-500 text-sm">View your complete activity log</Text>
+              <Text className="text-gray-800 font-medium">Change Password</Text>
+              <Text className="text-gray-500 text-sm">Update your password securely</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -194,6 +179,12 @@ export default function ProfileScreen() {
       
       {/* Show BottomNav only if user is not staff OR if staff has at least one class */}
       {(user?.role !== 'staff' || (user?.joinedClasses && user.joinedClasses.length > 0)) && <BottomNav />}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal 
+        visible={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+      />
     </View>
   );
 }
