@@ -9,6 +9,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase URL or ANON key not set. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env');
 }
 
+// Debug: Log Supabase project URL and key presence (remove after debugging)
+console.log('🔐 Supabase Project URL:', supabaseUrl);
+console.log('🔑 Supabase Anon Key present:', !!supabaseAnonKey, supabaseAnonKey ? `(${supabaseAnonKey.slice(0, 20)}...)` : 'MISSING');
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage,
