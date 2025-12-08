@@ -37,7 +37,7 @@ export default function LoginScreen() {
         className="pb-12"
       >
         <View className="pt-16 pb-8 px-6">
-          <Text className="text-white text-3xl font-bold">Welcome to CRED</Text>
+          <Text className="text-white text-3xl font-bold">Welcome to CREDENT</Text>
           <Text className="text-white/90 text-lg mt-2">Earn your Cred. Build your reputation.</Text>
         </View>
       </LinearGradient>
