@@ -4,14 +4,14 @@ import { getStaffCredPoints } from '@/services/supabaseClasses';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
-    AlertTriangle,
-    Award,
-    Bell,
-    BookOpen,
-    CheckCircle,
-    Clock,
-    Plus,
-    TrendingUp
+  AlertTriangle,
+  Award,
+  Bell,
+  BookOpen,
+  CheckCircle,
+  Clock,
+  Plus,
+  TrendingUp
 } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
 import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
@@ -32,7 +32,7 @@ export default function StudentDashboard() {
     approvedCount: 0,
     rejectedCount: 0,
   });
-  
+
   const currentClass = user?.joinedClasses?.find(c => c.class_id === user.currentClassId);
 
   // Fetch CRED points on mount and when user changes
@@ -77,9 +77,9 @@ export default function StudentDashboard() {
         })));
 
         // Fetch pending requests
-        const pending = await getRequests({ 
-          staff_id: user.id, 
-          status: 'pending' 
+        const pending = await getRequests({
+          staff_id: user.id,
+          status: 'pending'
         });
         setPendingRequests(pending.map((req: any) => ({
           id: req.id,
@@ -137,18 +137,18 @@ export default function StudentDashboard() {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header - Option 4: Stacked Cards (Active) */}
-      <LinearGradient 
-        colors={['#f59e0b', '#f97316']} 
+      <LinearGradient
+        colors={['#f59e0b', '#f97316']}
         className="px-6 pt-10 pb-4 rounded-b-2xl"
       >
         <View className="flex-row justify-between items-center mb-3">
           <View>
             <Text className="text-white text-xl font-bold">{user?.name}</Text>
             {currentClass?.advisor_name && (
-              <Text className="text-white/80 text-sm mt-0.5">Advisor: {currentClass.advisor_name}</Text>
+              <Text className="text-white/80 text-sm mt-0.5">HoD: {currentClass.advisor_name}</Text>
             )}
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             className="p-2 bg-white/20 rounded-lg relative"
             onPress={() => router.push('/notifications')}
           >
@@ -160,9 +160,9 @@ export default function StudentDashboard() {
             )}
           </TouchableOpacity>
         </View>
-        
+
         <View className="flex-row gap-2">
-          <TouchableOpacity 
+          <TouchableOpacity
             className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30"
             onPress={() => router.push('/joinClass')}
             activeOpacity={0.8}
@@ -173,7 +173,7 @@ export default function StudentDashboard() {
               {currentClass?.class_name || 'None'}
             </Text>
           </TouchableOpacity>
-          
+
           <View className="flex-1 bg-white/25 rounded-xl p-3 border border-white/30">
             <Award size={16} color="rgba(255,255,255,0.9)" />
             <Text className="text-white/90 text-xs font-medium mt-1">POINTS</Text>
@@ -328,8 +328,8 @@ export default function StudentDashboard() {
         {/* Stats Grid */}
         <View className="flex-row flex-wrap gap-3 mb-6">
           {staffStats.map((stat, index) => (
-            <View 
-              key={index} 
+            <View
+              key={index}
               className="bg-white rounded-xl p-4 flex-1 min-w-[30%] shadow-sm"
             >
               <View className={`p-2 ${stat.color} rounded-lg self-start mb-2`}>
@@ -345,7 +345,7 @@ export default function StudentDashboard() {
         <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
           <Text className="text-gray-900 font-bold text-lg mb-3">Quick Actions</Text>
           <View className="gap-3">
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => router.push('/request')}
               className="flex-row items-center bg-orange-50 rounded-xl p-4 border border-orange-200"
             >
@@ -357,8 +357,8 @@ export default function StudentDashboard() {
                 <Text className="text-gray-600 text-xs mt-1">Request points for your work</Text>
               </View>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               onPress={() => router.push('/joinClass')}
               className="flex-row items-center bg-blue-50 rounded-xl p-4 border border-blue-200"
             >
@@ -381,10 +381,10 @@ export default function StudentDashboard() {
               <Text className="text-orange-600 text-sm font-medium">View All</Text>
             </TouchableOpacity>
           </View>
-          
+
           {pendingRequests.slice(0, 3).map((request) => (
-            <View 
-              key={request.id} 
+            <View
+              key={request.id}
               className="py-3 border-b border-gray-100 last:border-0"
             >
               <View className="flex-row items-start justify-between mb-2">
@@ -408,10 +408,10 @@ export default function StudentDashboard() {
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-gray-900 font-bold text-lg">Recent Activity</Text>
           </View>
-          
+
           {recentActivity.map((activity) => (
-            <View 
-              key={activity.id} 
+            <View
+              key={activity.id}
               className="flex-row items-center py-3 border-b border-gray-100 last:border-0"
             >
               <View className={`p-2 rounded-full mr-3 ${activity.type === 'positive' ? 'bg-green-100' : 'bg-red-100'}`}>
@@ -425,12 +425,10 @@ export default function StudentDashboard() {
                 <Text className="text-gray-900 font-medium">{activity.action}</Text>
                 <Text className="text-gray-500 text-xs mt-1">{activity.time}</Text>
               </View>
-              <View className={`px-3 py-1 rounded-full ${
-                activity.type === 'positive' ? 'bg-green-100' : 'bg-red-100'
-              }`}>
-                <Text className={`font-bold text-sm ${
-                  activity.type === 'positive' ? 'text-green-700' : 'text-red-700'
+              <View className={`px-3 py-1 rounded-full ${activity.type === 'positive' ? 'bg-green-100' : 'bg-red-100'
                 }`}>
+                <Text className={`font-bold text-sm ${activity.type === 'positive' ? 'text-green-700' : 'text-red-700'
+                  }`}>
                   {activity.points}
                 </Text>
               </View>
