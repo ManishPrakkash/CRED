@@ -1,6 +1,6 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import type { Class, CreateClassParams, JoinedClass } from '@/lib/types';
-import { 
+import {
   createClass as createClassService,
   getAdvisorClasses,
   joinClassByCode as joinClassService,
