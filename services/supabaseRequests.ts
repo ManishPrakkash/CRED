@@ -98,7 +98,7 @@ export const createRequest = async (params: CreateRequestParams) => {
         .eq('id', params.advisor_id)
         .single();
 
-      const advisorName = advisorData?.name || 'Advisor';
+      const advisorName = advisorData?.name || 'HoD';
 
       // Create notification for staff
       await createNotification({
@@ -299,25 +299,25 @@ export const updateRequestStatus = async (requestId: string, params: UpdateReque
     }
 
     // Get advisor name for notification
-    const advisorName = (data as any).advisor?.name || 'Advisor';
+    const advisorName = (data as any).advisor?.name || 'HoD';
 
     // Create notification for staff member
-    const notificationType = 
+    const notificationType =
       params.status === 'approved' ? 'request_approved' :
-      params.status === 'rejected' ? 'request_rejected' :
-      'request_correction';
+        params.status === 'rejected' ? 'request_rejected' :
+          'request_correction';
 
-    const notificationTitle = 
+    const notificationTitle =
       params.status === 'approved' ? 'Request Approved' :
-      params.status === 'rejected' ? 'Request Rejected' :
-      'Request Needs Correction';
+        params.status === 'rejected' ? 'Request Rejected' :
+          'Request Needs Correction';
 
-    const notificationMessage = 
-      params.status === 'approved' 
+    const notificationMessage =
+      params.status === 'approved'
         ? `Your request has been approved! You received ${params.approved_points || data.requested_points} CRED points.`
         : params.status === 'rejected'
-        ? `Your request has been rejected. ${params.response_message || ''}`
-        : `Your request needs correction. ${params.response_message || ''}`;
+          ? `Your request has been rejected. ${params.response_message || ''}`
+          : `Your request needs correction. ${params.response_message || ''}`;
 
     await createNotification({
       user_id: data.staff_id,
@@ -369,9 +369,9 @@ export const updateRequestStatus = async (requestId: string, params: UpdateReque
  * Also creates an activity log for credit/debit
  */
 export const updateStaffCredPoints = async (
-  staffId: string, 
-  pointsToAdd: number, 
-  requestId?: string, 
+  staffId: string,
+  pointsToAdd: number,
+  requestId?: string,
   workDescription?: string,
   requestedPoints?: number
 ) => {
@@ -408,7 +408,7 @@ export const updateStaffCredPoints = async (
     const activityType = pointsToAdd >= 0 ? 'credit' : 'debit';
     const absPoints = Math.abs(pointsToAdd);
     const actionText = pointsToAdd >= 0 ? 'Earned' : 'Deducted';
-    
+
     // Build description with adjustment info if points differ
     let activityDescription = '';
     if (workDescription) {
@@ -508,10 +508,10 @@ export const approveRequest = async (
 
     // Update staff CRED points (creates credit/debit activity)
     // For peer requests, use target_staff_id; otherwise use staff_id
-    const staffToUpdate = request.is_peer_request && request.target_staff_id 
-      ? request.target_staff_id 
+    const staffToUpdate = request.is_peer_request && request.target_staff_id
+      ? request.target_staff_id
       : request.staff_id;
-    
+
     const pointsResult = await updateStaffCredPoints(
       staffToUpdate,
       approvedPoints,
@@ -525,10 +525,10 @@ export const approveRequest = async (
     }
 
     console.log('[approveRequest] Request approved successfully');
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: 'Request approved and points awarded',
-      newPoints: pointsResult.newPoints 
+      newPoints: pointsResult.newPoints
     };
   } catch (error: any) {
     console.error('[approveRequest] Exception:', error);
