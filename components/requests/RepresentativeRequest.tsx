@@ -38,7 +38,7 @@ export default function StaffRequest() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingRequestId, setEditingRequestId] = useState<string | null>(null);
-  
+
   const currentClass = user?.joinedClasses?.find(c => c.class_id === user?.currentClassId);
 
   // Fetch requests from database
@@ -65,7 +65,7 @@ export default function StaffRequest() {
 
         // Filter staff who are in the same class and exclude current user
         const classmatesList = (allStaff || [])
-          .filter(staff => 
+          .filter(staff =>
             staff.id !== user.id && // Exclude self
             staff.joined_classes?.some((jc: any) => jc.class_id === user.currentClassId)
           )
@@ -87,7 +87,7 @@ export default function StaffRequest() {
 
   const loadRequests = async () => {
     if (!user?.id) return;
-    
+
     try {
       setIsLoading(true);
       const requests = await getStaffRequests(user.id);
@@ -125,7 +125,7 @@ export default function StaffRequest() {
       Alert.alert('Invalid Points', 'Please enter a positive number when adding points');
       return;
     }
-    
+
     if (pointsType === 'subtract' && points > 0) {
       Alert.alert('Invalid Points', 'Please enter a negative number when deducting points');
       return;
@@ -151,13 +151,13 @@ export default function StaffRequest() {
         'Success',
         `Request updated and resubmitted: ${pointsType === 'add' ? '+' : '-'}${requestedPoints} points\nYour request will be reviewed again by the HOD.`
       );
-      
+
       setWorkDescription('');
       setRequestedPoints('');
       setPointsType('add');
       setShowSubmitForm(false);
       setEditingRequestId(null);
-      
+
       // Reload requests to show the updated one
       await loadRequests();
     } catch (error) {
@@ -172,14 +172,14 @@ export default function StaffRequest() {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
     }
-    
+
     if (event.type === 'dismissed' || event.type === 'set') {
       if (Platform.OS === 'ios') {
         // For iOS, only close on Done button
         return;
       }
     }
-    
+
     if (selectedDateValue && event.type !== 'dismissed') {
       setSelectedDate(selectedDateValue);
     }
@@ -205,7 +205,7 @@ export default function StaffRequest() {
   const filteredRequests = allRequests.filter(req => {
     const matchesSearch = req.work_description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterStatus === 'all' || req.status === filterStatus;
-    
+
     // Date filtering logic
     let matchesDate = true;
     if (selectedDate) {
@@ -213,10 +213,10 @@ export default function StaffRequest() {
       const filterDate = new Date(selectedDate);
       // Compare only year, month, and day
       matchesDate = requestDate.getFullYear() === filterDate.getFullYear() &&
-                    requestDate.getMonth() === filterDate.getMonth() &&
-                    requestDate.getDate() === filterDate.getDate();
+        requestDate.getMonth() === filterDate.getMonth() &&
+        requestDate.getDate() === filterDate.getDate();
     }
-    
+
     return matchesSearch && matchesFilter && matchesDate;
   });
 
@@ -242,7 +242,7 @@ export default function StaffRequest() {
       Alert.alert('Invalid Points', 'Please enter a positive number when adding points');
       return;
     }
-    
+
     if (pointsType === 'subtract' && points > 0) {
       Alert.alert('Invalid Points', 'Please enter a negative number when deducting points');
       return;
@@ -250,7 +250,7 @@ export default function StaffRequest() {
 
     // Get advisor ID from the current class
     let advisorId: string | null = null;
-    
+
     if (currentClass?.class_id) {
       try {
         const classDetails = await getClassById(currentClass.class_id);
@@ -259,9 +259,9 @@ export default function StaffRequest() {
         console.error('Failed to fetch class details:', error);
       }
     }
-    
+
     if (!advisorId) {
-      Alert.alert('Error', 'No advisor assigned to your class. Please contact administration.');
+      Alert.alert('Error', 'No HoD assigned to your class. Please contact administration.');
       return;
     }
 
@@ -328,13 +328,13 @@ export default function StaffRequest() {
         : `Work request submitted: ${requestedPoints} points\nYour request will be reviewed by the HOD.`;
 
       Alert.alert('Success', successMessage);
-      
+
       setWorkDescription('');
       setRequestedPoints('');
       setSelectedClassmate(null);
       setPointsType('add');
       setShowSubmitForm(false);
-      
+
       // Reload requests to show the new one
       await loadRequests();
     } catch (error) {
@@ -368,7 +368,7 @@ export default function StaffRequest() {
     const respondedDate = item.responded_at ? new Date(item.responded_at).toLocaleDateString() : null;
     const isPeerRequest = item.is_peer_request && item.target_staff_id;
     const targetStaff = (item as any).target_staff;
-    
+
     return (
       <View className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100">
         <View className="flex-row items-start justify-between mb-3">
@@ -406,7 +406,7 @@ export default function StaffRequest() {
             </View>
           )}
         </View>
-        
+
         {(item.response_message || respondedDate) && (
           <View className="pt-3 border-t border-gray-100">
             {respondedDate && (
@@ -447,8 +447,8 @@ export default function StaffRequest() {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <LinearGradient 
-        colors={['#f59e0b', '#f97316']} 
+      <LinearGradient
+        colors={['#f59e0b', '#f97316']}
         className="pt-12 pb-6 px-6 rounded-b-3xl"
       >
         <Text className="text-2xl font-bold text-white">Requests</Text>
@@ -489,7 +489,7 @@ export default function StaffRequest() {
         </View>
 
         {/* Submit New Request Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => setShowSubmitForm(!showSubmitForm)}
           className="bg-white rounded-xl p-4 mb-6 shadow-sm border-2 border-orange-200 flex-row items-center justify-between"
         >
@@ -510,7 +510,7 @@ export default function StaffRequest() {
             <Text className="text-lg font-bold text-gray-900 mb-4">
               {editingRequestId ? 'Update Request' : 'New Request'}
             </Text>
-            
+
             {/* Classmate Selection (only for new requests, not edits) */}
             {!editingRequestId && (
               <View className="mb-4">
@@ -535,9 +535,8 @@ export default function StaffRequest() {
               <Text className="text-gray-700 font-medium mb-2">Point Type *</Text>
               <View className="flex-row gap-3">
                 <TouchableOpacity
-                  className={`flex-1 py-3 rounded-lg border-2 items-center ${
-                    pointsType === 'add' ? 'bg-green-50 border-green-500' : 'border-gray-300'
-                  }`}
+                  className={`flex-1 py-3 rounded-lg border-2 items-center ${pointsType === 'add' ? 'bg-green-50 border-green-500' : 'border-gray-300'
+                    }`}
                   onPress={() => {
                     setPointsType('add');
                     // Remove minus sign if present
@@ -551,9 +550,8 @@ export default function StaffRequest() {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  className={`flex-1 py-3 rounded-lg border-2 items-center ${
-                    pointsType === 'subtract' ? 'bg-red-50 border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`flex-1 py-3 rounded-lg border-2 items-center ${pointsType === 'subtract' ? 'bg-red-50 border-red-500' : 'border-gray-300'
+                    }`}
                   onPress={() => {
                     setPointsType('subtract');
                     // Add minus sign if not present
@@ -581,7 +579,7 @@ export default function StaffRequest() {
                 onChangeText={setWorkDescription}
               />
             </View>
-            
+
             <View className="mb-4">
               <Text className="text-gray-700 font-medium mb-2">Requested CredPoints *</Text>
               <TextInput
@@ -611,9 +609,9 @@ export default function StaffRequest() {
                 </Text>
               )}
             </View>
-            
+
             <View className="flex-row gap-3">
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   setShowSubmitForm(false);
                   setEditingRequestId(null);
@@ -627,7 +625,7 @@ export default function StaffRequest() {
               >
                 <Text className="text-gray-700 font-bold">Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={editingRequestId ? handleUpdateRequest : handleSubmitRequest}
                 className="flex-1 bg-orange-600 py-3 rounded-lg items-center"
                 disabled={isSubmitting}
@@ -655,7 +653,7 @@ export default function StaffRequest() {
               onChangeText={setSearchQuery}
             />
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setShowDatePicker(true)}
             className={`bg-white rounded-xl px-4 py-3 shadow-sm items-center justify-center ${selectedDate ? 'border-2 border-green-500' : ''}`}
           >
@@ -671,17 +669,15 @@ export default function StaffRequest() {
               <TouchableOpacity
                 key={status}
                 onPress={() => setFilterStatus(status as any)}
-                className={`px-4 py-2 rounded-full ${
-                  filterStatus === status 
-                    ? 'bg-orange-600' 
+                className={`px-4 py-2 rounded-full ${filterStatus === status
+                    ? 'bg-orange-600'
                     : 'bg-gray-100'
-                }`}
+                  }`}
               >
-                <Text className={`font-medium capitalize ${
-                  filterStatus === status 
-                    ? 'text-white' 
+                <Text className={`font-medium capitalize ${filterStatus === status
+                    ? 'text-white'
                     : 'text-gray-700'
-                }`}>
+                  }`}>
                   {status}
                 </Text>
               </TouchableOpacity>
@@ -764,7 +760,7 @@ export default function StaffRequest() {
                 <View className="bg-white rounded-xl p-8 items-center">
                   <Text className="text-gray-500 text-center">
                     {searchQuery || filterStatus !== 'all' || selectedDate
-                      ? 'No requests match your filters' 
+                      ? 'No requests match your filters'
                       : 'No work requests yet. Submit your first work request to earn CredPoints!'}
                   </Text>
                 </View>
@@ -784,9 +780,9 @@ export default function StaffRequest() {
         onRequestClose={() => setShowClassmateDropdown(false)}
       >
         <View className="flex-1 bg-black/50">
-          <TouchableOpacity 
-            className="flex-1" 
-            activeOpacity={1} 
+          <TouchableOpacity
+            className="flex-1"
+            activeOpacity={1}
             onPress={() => setShowClassmateDropdown(false)}
           >
             <View className="flex-1 justify-center px-6">
@@ -796,7 +792,7 @@ export default function StaffRequest() {
                     <Text className="text-gray-900 text-lg font-bold">Select Recipient</Text>
                     <Text className="text-gray-500 text-sm mt-1">Choose who receives the points</Text>
                   </View>
-                  
+
                   <ScrollView className="max-h-96">
                     <TouchableOpacity
                       className={`p-4 border-b border-gray-100 ${!selectedClassmate ? 'bg-orange-50' : ''}`}
