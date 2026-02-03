@@ -1,7 +1,7 @@
 {
   "expo": {
     "owner": "keerthiaanand",
-    "name": "cred",
+    "name": "CREDENT",
     "slug": "cred",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,7 +20,8 @@
       "output": "static"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -31,6 +32,12 @@
       "eas": {
         "projectId": "1b3a02aa-4dd2-45bc-8493-8f7de5ebdddd"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1b3a02aa-4dd2-45bc-8493-8f7de5ebdddd"
     }
   }
 }
