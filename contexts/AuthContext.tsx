@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Save current session
       await AsyncStorage.setItem(USER_SESSION_KEY, JSON.stringify(userData));
-      
+
       // Save persistent data (classes) for this user
       const persistentData = {
         id: userData.id,
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const userData = await loginWithSupabase(email, password);
-      
+
       // For staff users, load joined classes from database
       if (userData.role === 'staff') {
         try {
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           userData.currentClassId = null;
         }
       }
-      
+
       // Load notifications from Supabase
       try {
         const notifications = await getUserNotifications(userData.id);
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Failed to load notifications:', error);
         userData.notifications = [];
       }
-      
+
       setUser(userData);
     } catch (error) {
       throw error;
@@ -173,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Use Supabase service to validate and join class
     const result = await joinClassService(user.id, joinCode.toUpperCase());
-    
+
     if (!result.success) {
       throw new Error(result.message);
     }
@@ -201,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const switchClass = (classId: string) => {
     if (!user) return;
-    
+
     setUser({
       ...user,
       currentClassId: classId,
@@ -210,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const deleteClass = (classId: string) => {
     if (!user) return;
-    
+
     const updatedClasses = user.joinedClasses?.filter(c => c.class_id !== classId) || [];
     const updatedUser = {
       ...user,
@@ -218,7 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear currentClassId if deleting the active class
       currentClassId: user.currentClassId === classId ? null : user.currentClassId,
     };
-    
+
     setUser(updatedUser);
   };
 
@@ -229,17 +229,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Use Supabase service to leave class
     const result = await leaveClassService(user.id, classId);
-    
+
     if (!result.success) {
       throw new Error(result.message);
     }
 
     // Clear currentClassId if leaving the active class
     const wasActiveClass = user.currentClassId === classId;
-    
+
     // Refresh user's joined classes from database
     await refreshJoinedClasses();
-    
+
     // If user left their active class, clear currentClassId to force redirect
     if (wasActiveClass) {
       setUser((prev) => prev ? { ...prev, currentClassId: null } : null);
@@ -276,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Update in Supabase database
     await markAsRead(notificationId);
-    
+
     // Refresh notifications from database to ensure sync
     await refreshNotifications();
   };
@@ -322,13 +322,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasJoinedClasses = !!(user?.joinedClasses && user.joinedClasses.length > 0);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      login, 
-      logout, 
-      isLoading, 
-      joinClass, 
-      switchClass, 
+    <AuthContext.Provider value={{
+      user,
+      login,
+      logout,
+      isLoading,
+      joinClass,
+      switchClass,
       deleteClass,
       leaveClass,
       refreshJoinedClasses,
