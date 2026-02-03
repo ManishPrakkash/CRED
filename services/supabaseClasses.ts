@@ -133,7 +133,7 @@ export const joinClassByCode = async (
       `)
       .eq('class_code', classCode)
       .single();
-    
+
     if (classError || !classData) {
       return {
         success: false,
@@ -146,7 +146,7 @@ export const joinClassByCode = async (
       return {
         success: false,
         class: classData,
-        message: 'This class is currently closed for enrollment. Please contact your advisor.',
+        message: 'This class is currently closed for enrollment. Please contact your HoD.',
       };
     }
 
@@ -155,7 +155,7 @@ export const joinClassByCode = async (
       return {
         success: false,
         class: classData,
-        message: `Class is full (${classData.current_enrollment}/${classData.total_students}). Please contact your advisor for assistance.`,
+        message: `Class is full (${classData.current_enrollment}/${classData.total_students}). Please contact your HoD for assistance.`,
       };
     }
 
@@ -256,13 +256,13 @@ export const getStaffClasses = async (staffId: string): Promise<JoinedClass[]> =
     }
 
     const joinedClasses = (data?.joined_classes || []) as JoinedClass[];
-    
+
     // Fetch advisor names for classes that don't have them
     const classesNeedingAdvisor = joinedClasses.filter(jc => !jc.advisor_name);
-    
+
     if (classesNeedingAdvisor.length > 0) {
       const classIds = classesNeedingAdvisor.map(jc => jc.class_id);
-      
+
       const { data: classesData } = await supabase
         .from('classes')
         .select(`
@@ -270,7 +270,7 @@ export const getStaffClasses = async (staffId: string): Promise<JoinedClass[]> =
           users!classes_advisor_id_fkey(name)
         `)
         .in('id', classIds);
-      
+
       if (classesData) {
         // Update joined classes with advisor names
         const updatedJoinedClasses = joinedClasses.map(jc => {
@@ -283,13 +283,13 @@ export const getStaffClasses = async (staffId: string): Promise<JoinedClass[]> =
           }
           return jc;
         });
-        
+
         // Update database with advisor names
         await supabase
           .from('users')
           .update({ joined_classes: updatedJoinedClasses })
           .eq('id', staffId);
-        
+
         return updatedJoinedClasses;
       }
     }
@@ -418,7 +418,7 @@ export const getClassStaffCount = async (classId: string): Promise<number> => {
 export const getClassStaff = async (classId: string): Promise<Array<{ id: string; name: string; email: string; avatar?: string | null; joined_at: string }>> => {
   try {
     console.log('[getClassStaff] Fetching staff for class ID:', classId);
-    
+
     // Fetch all staff users with their joined_classes
     const { data: users, error } = await supabase
       .from('users')
@@ -431,7 +431,7 @@ export const getClassStaff = async (classId: string): Promise<Array<{ id: string
     }
 
     console.log('[getClassStaff] Total staff users found:', users?.length || 0);
-    
+
     const staffList: Array<{ id: string; name: string; email: string; avatar?: string | null; joined_at: string }> = [];
 
     // Filter users who have this class in their joined_classes array
@@ -441,12 +441,12 @@ export const getClassStaff = async (classId: string): Promise<Array<{ id: string
         has_joined_classes: !!user.joined_classes,
         joined_classes_length: user.joined_classes?.length || 0
       });
-      
+
       const joinedClass = (user.joined_classes || []).find((jc: any) => {
         console.log(`[getClassStaff] Comparing class IDs: ${jc.class_id} === ${classId}`, jc.class_id === classId);
         return jc.class_id === classId;
       });
-      
+
       if (joinedClass) {
         console.log(`[getClassStaff] ✓ User ${user.name} is enrolled in this class`);
         staffList.push({
@@ -494,7 +494,7 @@ export const validateAndCleanJoinedClasses = async (
     }
 
     const joinedClasses = (userData?.joined_classes || []) as JoinedClass[];
-    
+
     if (joinedClasses.length === 0) {
       return { validClasses: [], removedClasses: [] };
     }
@@ -629,7 +629,7 @@ export const leaveClass = async (
 
     if (!getClassError && classData) {
       const newEnrollment = Math.max(0, (classData.current_enrollment || 1) - 1);
-      
+
       const { error: updateClassError } = await supabase
         .from('classes')
         .update({ current_enrollment: newEnrollment })
@@ -693,8 +693,8 @@ export const toggleClassEnrollment = async (
 
     return {
       success: true,
-      message: isOpen 
-        ? 'Class is now open for enrollment' 
+      message: isOpen
+        ? 'Class is now open for enrollment'
         : 'Class enrollment has been closed',
     };
   } catch (error: any) {
