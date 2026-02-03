@@ -48,7 +48,7 @@ export default function JoinClassScreen() {
     if (!classStillExists) {
       Alert.alert(
         'Class Not Available',
-        'This class has been deleted by the advisor. Please contact your advisor for assistance.',
+        'This class has been deleted by the HoD. Please contact your HoD for assistance.',
         [{ text: 'OK' }]
       );
       // Refresh the list to remove deleted classes from UI
@@ -84,7 +84,7 @@ export default function JoinClassScreen() {
         await leaveClass(classToLeave.id);
         setShowLeaveModal(false);
         setClassToLeave(null);
-        
+
         // If leaving active class, stay on joinClass page (router.replace prevents back navigation)
         if (wasActiveClass) {
           Alert.alert('Success', `You have left ${classToLeave.name}. Please select another class or join a new one.`);
@@ -116,7 +116,7 @@ export default function JoinClassScreen() {
             <Text className="text-white text-3xl font-bold">My Classes</Text>
             <Text className="text-white/90 text-sm mt-1">Join and select your class</Text>
           </View>
-          
+
           {/* Profile Icon */}
           <TouchableOpacity
             onPress={() => router.push('/profile')}
