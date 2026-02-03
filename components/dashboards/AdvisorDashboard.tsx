@@ -47,16 +47,16 @@ export default function AdvisorDashboard() {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <LinearGradient 
-        colors={['#10b981', '#059669']} 
+      <LinearGradient
+        colors={['#10b981', '#059669']}
         className="px-6 pt-12 pb-6 rounded-b-3xl"
       >
         <View className="flex-row justify-between items-center">
           <View>
-            <Text className="text-white text-sm opacity-90">Advisor Dashboard</Text>
+            <Text className="text-white text-sm opacity-90">HoD Dashboard</Text>
             <Text className="text-white text-2xl font-bold mt-1">{user?.name}</Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             className="p-2 bg-white/20 rounded-lg relative"
             onPress={() => router.push('/notifications')}
           >
@@ -74,8 +74,8 @@ export default function AdvisorDashboard() {
         {/* Stats Grid */}
         <View className="flex-row flex-wrap gap-3 mb-6">
           {advisorStats.map((stat, index) => (
-            <View 
-              key={index} 
+            <View
+              key={index}
               className="bg-white rounded-xl p-4 flex-1 min-w-[30%] shadow-sm"
             >
               <View className={`p-2 ${stat.color} rounded-lg self-start mb-2`}>
@@ -91,7 +91,7 @@ export default function AdvisorDashboard() {
         <View className="bg-white rounded-2xl p-4 shadow-sm mb-6">
           <Text className="text-gray-900 font-bold text-base mb-3">Quick Actions</Text>
           <View className="gap-2">
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => router.push('/request')}
               className="flex-row items-center bg-blue-50 rounded-lg p-3 border border-blue-100"
             >
@@ -104,7 +104,7 @@ export default function AdvisorDashboard() {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => router.push('/leaderboard')}
               className="flex-row items-center bg-green-50 rounded-lg p-3 border border-green-100"
             >
@@ -125,7 +125,7 @@ export default function AdvisorDashboard() {
             <View className="mb-3">
               <Text className="text-gray-900 font-bold text-base">Your Classes</Text>
             </View>
-            
+
             <View className="gap-2">
               {classes.map((cls) => (
                 <TouchableOpacity
