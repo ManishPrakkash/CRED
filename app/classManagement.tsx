@@ -8,7 +8,7 @@ import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, BookOpen, Check, Copy, Lock, LockOpen, Plus, Search, Trash2, Users, X } from 'lucide-react-native';
 import React, { useState, useEffect } from 'react';
-import { Alert, FlatList, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { Alert, FlatList, Image, Modal, ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -74,7 +74,7 @@ const ClassManagementScreen = () => {
     );
     if (duplicateName) {
       Alert.alert(
-        'Duplicate Class Name', 
+        'Duplicate Class Name',
         `A class named "${duplicateName.class_name}" already exists in your classes.\n\nPlease choose a different name.`,
         [{ text: 'OK' }]
       );
@@ -141,7 +141,7 @@ const ClassManagementScreen = () => {
     if (!viewingClass || !user?.id) return;
 
     const result = await toggleClassEnrollment(viewingClass.id, user.id, isOpen);
-    
+
     if (result.success) {
       setViewingClass({ ...viewingClass, is_open: isOpen });
       await refreshClasses();
@@ -338,14 +338,14 @@ const ClassManagementScreen = () => {
       const result = await deleteClass(classToDelete.id);
       setShowDeleteModal(false);
       setClassToDelete(null);
-      
+
       if (result.success) {
         Alert.alert('Deleted', result.message);
       } else {
         Alert.alert('Error', result.message);
       }
     }
-  };  const cancelDelete = () => {
+  }; const cancelDelete = () => {
     setShowDeleteModal(false);
     setClassToDelete(null);
   };
@@ -452,7 +452,7 @@ const ClassManagementScreen = () => {
                   <ArrowLeft size={24} color="white" />
                   <Text style={{ color: 'white', marginLeft: 8, fontSize: 16 }}>Back to Classes</Text>
                 </TouchableOpacity>
-                
+
                 {/* Toggle Enrollment Button - Top Right */}
                 <TouchableOpacity
                   onPress={() => handleToggleEnrollment(!viewingClass.is_open)}
@@ -519,7 +519,7 @@ const ClassManagementScreen = () => {
               </View>
             </View>
           </LinearGradient>
-          
+
           <ScrollView
             style={{ flex: 1, paddingHorizontal: 16, marginTop: -24 }}
             contentContainerStyle={{ paddingBottom: 100 }}
@@ -672,176 +672,167 @@ const ClassManagementScreen = () => {
             )}
           </ScrollView>
 
-          {/* Request Modal */}
+          {/* Request Modal - Minimal Design */}
           <Modal
             visible={showRequestModal}
             transparent={true}
-            animationType="slide"
+            animationType="fade"
             onRequestClose={handleCloseRequestModal}
           >
-            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-              <View style={{
-                backgroundColor: 'white',
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                paddingTop: 20,
-                paddingHorizontal: 20,
-                paddingBottom: 40,
-                maxHeight: '85%'
-              }}>
-                {/* Header */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111827' }}>
-                    Submit Request for {selectedStaff?.name}
-                  </Text>
-                  <TouchableOpacity onPress={handleCloseRequestModal}>
-                    <X size={24} color="#6b7280" />
-                  </TouchableOpacity>
-                </View>
-
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {/* Point Type Selection */}
-                  <View style={{ marginBottom: 20 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>
-                      Point Type
+            <KeyboardAvoidingView
+              style={{ flex: 1 }}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }}
+                activeOpacity={1}
+                onPress={() => Keyboard.dismiss()}
+              >
+                <TouchableOpacity
+                  activeOpacity={1}
+                  onPress={(e) => e.stopPropagation()}
+                  style={{
+                    backgroundColor: 'white',
+                    borderRadius: 16,
+                    padding: 16,
+                    width: '100%',
+                    maxWidth: 340,
+                  }}>
+                  {/* Header */}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#111827', flex: 1 }} numberOfLines={1}>
+                      Update: {selectedStaff?.name}
                     </Text>
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setPointType('add');
-                          if (requestedPoints && parseFloat(requestedPoints) < 0) {
-                            setRequestedPoints(Math.abs(parseFloat(requestedPoints)).toString());
-                          }
-                        }}
-                        style={{
-                          flex: 1,
-                          paddingVertical: 12,
-                          borderRadius: 12,
-                          borderWidth: 2,
-                          borderColor: pointType === 'add' ? '#10b981' : '#e5e7eb',
-                          backgroundColor: pointType === 'add' ? '#d1fae5' : 'white',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <Text style={{
-                          fontWeight: '600',
-                          color: pointType === 'add' ? '#10b981' : '#6b7280'
-                        }}>
-                          Add Points
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setPointType('deduct');
-                          if (requestedPoints && parseFloat(requestedPoints) > 0) {
-                            setRequestedPoints('-' + requestedPoints);
-                          }
-                        }}
-                        style={{
-                          flex: 1,
-                          paddingVertical: 12,
-                          borderRadius: 12,
-                          borderWidth: 2,
-                          borderColor: pointType === 'deduct' ? '#ef4444' : '#e5e7eb',
-                          backgroundColor: pointType === 'deduct' ? '#fee2e2' : 'white',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <Text style={{
-                          fontWeight: '600',
-                          color: pointType === 'deduct' ? '#ef4444' : '#6b7280'
-                        }}>
-                          Deduct Points
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                    <TouchableOpacity onPress={handleCloseRequestModal} style={{ padding: 4 }}>
+                      <X size={20} color="#6b7280" />
+                    </TouchableOpacity>
                   </View>
 
-                  {/* Work Description */}
-                  <View style={{ marginBottom: 20 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>
-                      Work Description *
-                    </Text>
+                  {/* Point Type - Compact Toggle */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setPointType('add');
+                        if (requestedPoints && parseFloat(requestedPoints) < 0) {
+                          setRequestedPoints(Math.abs(parseFloat(requestedPoints)).toString());
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 10,
+                        borderRadius: 8,
+                        borderWidth: 1.5,
+                        borderColor: pointType === 'add' ? '#10b981' : '#e5e7eb',
+                        backgroundColor: pointType === 'add' ? '#d1fae5' : 'white',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <Text style={{ fontWeight: '600', fontSize: 13, color: pointType === 'add' ? '#10b981' : '#9ca3af' }}>
+                        + Add
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setPointType('deduct');
+                        if (requestedPoints && parseFloat(requestedPoints) > 0) {
+                          setRequestedPoints('-' + requestedPoints);
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 10,
+                        borderRadius: 8,
+                        borderWidth: 1.5,
+                        borderColor: pointType === 'deduct' ? '#ef4444' : '#e5e7eb',
+                        backgroundColor: pointType === 'deduct' ? '#fee2e2' : 'white',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <Text style={{ fontWeight: '600', fontSize: 13, color: pointType === 'deduct' ? '#ef4444' : '#9ca3af' }}>
+                        − Deduct
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Points Input - Compact */}
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '500', color: '#6b7280', marginBottom: 6 }}>Points</Text>
                     <TextInput
                       style={{
                         borderWidth: 1,
                         borderColor: '#d1d5db',
-                        borderRadius: 12,
-                        padding: 12,
+                        borderRadius: 8,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        fontSize: 16,
+                        color: '#111827',
+                        backgroundColor: '#f9fafb'
+                      }}
+                      placeholder="0"
+                      placeholderTextColor="#9ca3af"
+                      value={pointType === 'deduct' ? requestedPoints.replace('-', '') : requestedPoints}
+                      onChangeText={handlePointsChange}
+                      keyboardType="numeric"
+                    />
+                  </View>
+
+                  {/* Work Description - Compact */}
+                  <View style={{ marginBottom: 16 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '500', color: '#6b7280', marginBottom: 6 }}>Reason</Text>
+                    <TextInput
+                      style={{
+                        borderWidth: 1,
+                        borderColor: '#d1d5db',
+                        borderRadius: 8,
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
                         fontSize: 14,
                         color: '#111827',
-                        minHeight: 100,
+                        backgroundColor: '#f9fafb',
+                        height: 60,
                         textAlignVertical: 'top'
                       }}
-                      placeholder="Describe the work performed..."
+                      placeholder="Brief description..."
                       placeholderTextColor="#9ca3af"
                       value={workDescription}
                       onChangeText={setWorkDescription}
                       multiline
-                      numberOfLines={4}
                     />
                   </View>
 
-                  {/* Points */}
-                  <View style={{ marginBottom: 20 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 }}>
-                      Points *
-                    </Text>
-                    <View style={{ position: 'relative' }}>
-                      {pointType === 'deduct' && (
-                        <Text style={{
-                          position: 'absolute',
-                          left: 12,
-                          top: 12,
-                          fontSize: 16,
-                          color: '#ef4444',
-                          fontWeight: '600',
-                          zIndex: 1
-                        }}>
-                          -
-                        </Text>
-                      )}
-                      <TextInput
-                        style={{
-                          borderWidth: 1,
-                          borderColor: '#d1d5db',
-                          borderRadius: 12,
-                          padding: 12,
-                          paddingLeft: pointType === 'deduct' ? 24 : 12,
-                          fontSize: 16,
-                          color: '#111827'
-                        }}
-                        placeholder="Enter points"
-                        placeholderTextColor="#9ca3af"
-                        value={pointType === 'deduct' ? requestedPoints.replace('-', '') : requestedPoints}
-                        onChangeText={handlePointsChange}
-                        keyboardType="numeric"
-                      />
-                    </View>
-                    <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                      {pointType === 'add' ? 'Enter positive value' : 'Enter value (will be deducted)'}
-                    </Text>
+                  {/* Action Buttons */}
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity
+                      onPress={handleCloseRequestModal}
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#f3f4f6',
+                        paddingVertical: 12,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ color: '#6b7280', fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleSubmitRequest}
+                      disabled={isSubmittingRequest}
+                      style={{
+                        flex: 1,
+                        backgroundColor: isSubmittingRequest ? '#9ca3af' : '#10b981',
+                        paddingVertical: 12,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>
+                        {isSubmittingRequest ? 'Saving...' : 'Save'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-
-                  {/* Submit Button */}
-                  <TouchableOpacity
-                    onPress={handleSubmitRequest}
-                    disabled={isSubmittingRequest}
-                    style={{
-                      backgroundColor: isSubmittingRequest ? '#9ca3af' : '#10b981',
-                      paddingVertical: 14,
-                      borderRadius: 12,
-                      alignItems: 'center',
-                      marginTop: 10
-                    }}
-                  >
-                    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
-                      {isSubmittingRequest ? 'Loading...' : 'Update Points'}
-                    </Text>
-                  </TouchableOpacity>
-                </ScrollView>
-              </View>
-            </View>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            </KeyboardAvoidingView>
           </Modal>
 
           <BottomNav />
@@ -988,16 +979,16 @@ const ClassManagementScreen = () => {
             </View>
           </ScrollView>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && classToDelete && (
-        <DeleteClassModal
-          visible={showDeleteModal}
-          targetClassName={classToDelete.class_name}
-          onConfirm={confirmDelete}
-          onCancel={cancelDelete}
-        />
-      )}
-      <BottomNav />
+          {/* Delete Confirmation Modal */}
+          {showDeleteModal && classToDelete && (
+            <DeleteClassModal
+              visible={showDeleteModal}
+              targetClassName={classToDelete.class_name}
+              onConfirm={confirmDelete}
+              onCancel={cancelDelete}
+            />
+          )}
+          <BottomNav />
         </View>
       )}
     </View>
