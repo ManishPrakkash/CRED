@@ -29,8 +29,7 @@ We collect the following personal information when you create an account and use
 - **Enrollment Status**: Current enrollment in classes
 
 ### Device Information
-- **Push Notification Token**: Device token used to send push notifications
-- **Device Type**: Mobile platform (Android/iOS)
+- **Device Type**: Mobile platform (Android)
 
 ### Usage Data
 - **App Activity**: Actions performed within the app
@@ -47,7 +46,7 @@ We use the information we collect to:
    - Track and display CRED points and activity history
 
 2. **Send Notifications**
-   - Push notifications about request approvals/rejections
+   - Notifications about request approvals/rejections
    - Notifications about new work requests (for advisors)
    - Notifications about corrections needed
    - Updates about CRED point changes
@@ -66,7 +65,6 @@ We use the information we collect to:
 
 ### Where Your Data is Stored
 - Your data is stored securely on **Supabase** cloud servers
-- Push notification tokens are stored to enable notification delivery
 - All data transmissions are encrypted using industry-standard protocols
 
 ### Security Measures
@@ -88,23 +86,6 @@ We use the following third-party services that may collect information:
 - **Purpose**: Database, authentication, and backend services
 - **Data Shared**: All data mentioned above
 - **Privacy Policy**: https://supabase.com/privacy
-
-### Expo (React Native)
-- **Purpose**: Push notifications and app framework
-- **Data Shared**: Device push notification tokens
-- **Privacy Policy**: https://expo.dev/privacy
-
-### Expo Push Notification Service
-- **Purpose**: Delivering push notifications to your device
-- **Data Shared**: Push tokens and notification content
-- **Privacy Policy**: https://expo.dev/privacy
-
-## Push Notifications
-
-- Push notifications are sent directly to your device
-- Notification content is **not stored in our database**
-- You can disable notifications in your device settings
-- Disabling notifications may limit app functionality
 
 ## Data Sharing and Disclosure
 
@@ -138,10 +119,6 @@ You have the right to:
 - Request account deletion by contacting us at manishprakkash@gmail.com
 - Upon deletion, we will remove your personal data within 30 days
 - Some anonymized data may be retained for records
-
-### Control Notifications
-- Enable or disable push notifications in device settings
-- Notifications will continue to be sent to your device if enabled
 
 ### Opt-Out
 - You can stop using the app at any time
@@ -181,15 +158,13 @@ By using CREDENT, you consent to our Privacy Policy and agree to its terms.
 
 **What we collect:** Email, name, work requests, CRED points, push tokens
 
-**Why we collect it:** To manage work requests, track points, send notifications
+**Why we collect it:** To manage work requests, track points
 
 **Who sees it:** Your advisor/HoD sees your requests, classmates see leaderboard
 
 **Third parties:** Supabase (database)
 
-**Your control:** View/update in Profile, delete account anytime, disable notifications
-
-**Notifications:** Sent to device only, not stored in database
+**Your control:** View/update in Profile, delete account anytime
 
 **Questions?** Contact manishprakkash@gmail.com
 
