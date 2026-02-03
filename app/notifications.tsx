@@ -113,31 +113,29 @@ export default function Notifications() {
             {notifications.map((notification) => (
               <View
                 key={notification.id}
-                className={`bg-white rounded-xl p-4 border ${
-                  !notification.read ? 'border-l-4' : ''
-                } ${getNotificationColor(notification.type)}`}
+                className={`bg-white rounded-xl p-4 border ${!notification.read ? 'border-l-4' : ''
+                  } ${getNotificationColor(notification.type)}`}
               >
                 <View className="flex-row items-start gap-3">
                   <View className={`p-2 rounded-lg ${getNotificationColor(notification.type)}`}>
                     {getNotificationIcon(notification.type)}
                   </View>
-                  
+
                   <View className="flex-1">
                     <View className="flex-row items-start justify-between mb-1">
-                      <Text className={`text-gray-900 font-semibold flex-1 ${
-                        !notification.read ? 'font-bold' : ''
-                      }`}>
+                      <Text className={`text-gray-900 font-semibold flex-1 ${!notification.read ? 'font-bold' : ''
+                        }`}>
                         {notification.title}
                       </Text>
                       {!notification.read && (
                         <View className="w-2 h-2 bg-orange-500 rounded-full ml-2" />
                       )}
                     </View>
-                    
+
                     <Text className="text-gray-600 text-sm leading-5 mb-2">
                       {notification.message}
                     </Text>
-                    
+
                     <View className="flex-row items-center justify-between">
                       <View className="flex-row items-center gap-3">
                         <Text className="text-gray-400 text-xs">
@@ -147,7 +145,7 @@ export default function Notifications() {
                           from {notification.fromUserName}
                         </Text>
                       </View>
-                      
+
                       {!notification.read && (
                         <TouchableOpacity
                           onPress={(e) => handleMarkAsRead(notification.id, e)}
