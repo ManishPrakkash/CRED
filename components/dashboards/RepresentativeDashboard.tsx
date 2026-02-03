@@ -3,15 +3,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import {
-    AlertCircle,
-    Award,
-    Bell,
-    CheckCircle,
-    ClipboardList,
-    Clock,
-    Plus,
-    Send,
-    TrendingUp
+  AlertCircle,
+  Award,
+  Bell,
+  CheckCircle,
+  ClipboardList,
+  Clock,
+  Plus,
+  Send,
+  TrendingUp
 } from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -35,17 +35,17 @@ export default function RepresentativeDashboard() {
   ];
 
   const quickActions = [
-    { 
-      title: 'Submit New Request', 
-      desc: 'Add or subtract points', 
+    {
+      title: 'Submit New Request',
+      desc: 'Add or subtract points',
       icon: <Plus size={24} color="#2563eb" />,
       color: 'bg-blue-50',
       borderColor: 'border-blue-200',
       onPress: () => router.push('/request')
     },
-    { 
-      title: 'View All Requests', 
-      desc: 'Check request history', 
+    {
+      title: 'View All Requests',
+      desc: 'Check request history',
       icon: <ClipboardList size={24} color="#10b981" />,
       color: 'bg-green-50',
       borderColor: 'border-green-200',
@@ -56,8 +56,8 @@ export default function RepresentativeDashboard() {
   return (
     <View className="flex-1 bg-gray-50">
       {/* Header */}
-      <LinearGradient 
-        colors={['#f59e0b', '#f97316']} 
+      <LinearGradient
+        colors={['#f59e0b', '#f97316']}
         className="px-6 pt-12 pb-6 rounded-b-3xl"
       >
         <View className="flex-row justify-between items-center">
@@ -65,7 +65,7 @@ export default function RepresentativeDashboard() {
             <Text className="text-white text-sm opacity-90">Representative Dashboard</Text>
             <Text className="text-white text-2xl font-bold mt-1">{user?.name}</Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             className="p-2 bg-white/20 rounded-full relative"
             onPress={() => router.push('/notifications')}
           >
@@ -77,7 +77,7 @@ export default function RepresentativeDashboard() {
             )}
           </TouchableOpacity>
         </View>
-        
+
         {/* Summary Card */}
         <View className="bg-white/20 rounded-2xl p-4 mt-4">
           <Text className="text-white/80 text-sm">Total Requests</Text>
@@ -95,8 +95,8 @@ export default function RepresentativeDashboard() {
         {/* Stats Grid */}
         <View className="flex-row flex-wrap gap-3 mb-6">
           {repStats.map((stat, index) => (
-            <View 
-              key={index} 
+            <View
+              key={index}
               className="bg-white rounded-xl p-4 flex-1 min-w-[45%] shadow-sm"
             >
               <View className={`p-2 ${stat.color} rounded-lg self-start mb-2`}>
@@ -113,7 +113,7 @@ export default function RepresentativeDashboard() {
           <Text className="text-gray-900 font-bold text-lg mb-3">Quick Actions</Text>
           <View className="gap-3">
             {quickActions.map((action, index) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={index}
                 onPress={action.onPress}
                 className={`flex-row items-center ${action.color} rounded-xl p-4 border ${action.borderColor}`}
@@ -138,10 +138,10 @@ export default function RepresentativeDashboard() {
               <Text className="text-blue-600 text-sm font-medium">View All</Text>
             </TouchableOpacity>
           </View>
-          
+
           {recentRequests.map((request) => (
-            <View 
-              key={request.id} 
+            <View
+              key={request.id}
               className="py-3 border-b border-gray-100 last:border-0"
             >
               <View className="flex-row items-start justify-between mb-2">
@@ -149,12 +149,10 @@ export default function RepresentativeDashboard() {
                   <Text className="text-gray-900 font-medium">{request.student}</Text>
                   <Text className="text-gray-600 text-sm mt-1">{request.action}</Text>
                 </View>
-                <View className={`px-3 py-1 rounded-full ${
-                  request.status === 'pending' ? 'bg-orange-100' : 'bg-green-100'
-                }`}>
-                  <Text className={`text-xs font-medium ${
-                    request.status === 'pending' ? 'text-orange-700' : 'text-green-700'
+                <View className={`px-3 py-1 rounded-full ${request.status === 'pending' ? 'bg-orange-100' : 'bg-green-100'
                   }`}>
+                  <Text className={`text-xs font-medium ${request.status === 'pending' ? 'text-orange-700' : 'text-green-700'
+                    }`}>
                     {request.status === 'pending' ? 'Pending' : 'Approved'}
                   </Text>
                 </View>
@@ -177,7 +175,7 @@ export default function RepresentativeDashboard() {
                 • Be specific and detailed in request reasons{'\n'}
                 • Submit requests promptly after incidents{'\n'}
                 • Follow class point policies{'\n'}
-                • Review advisor feedback regularly
+                • Review HoD feedback regularly
               </Text>
             </View>
           </View>
