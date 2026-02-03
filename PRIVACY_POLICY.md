@@ -135,7 +135,7 @@ You have the right to:
 - Change your password at any time
 
 ### Delete Your Data
-- Request account deletion by contacting us at [your-email@example.com]
+- Request account deletion by contacting us at manishprakkash@gmail.com
 - Upon deletion, we will remove your personal data within 30 days
 - Some anonymized data may be retained for records
 
@@ -168,10 +168,8 @@ Your information may be transferred to and stored on servers located outside you
 
 If you have questions or concerns about this Privacy Policy, please contact us:
 
-- **Email**: [your-email@example.com]
+- **Email**: manishprakkash@gmail.com
 - **App Support**: Through the Profile section in the app
-- **Institution**: [Your Institution Name]
-- **Address**: [Your Institution Address]
 
 ## Your Consent
 
@@ -187,13 +185,13 @@ By using CREDENT, you consent to our Privacy Policy and agree to its terms.
 
 **Who sees it:** Your advisor/HoD sees your requests, classmates see leaderboard
 
-**Third parties:** Supabase (database), Expo (notifications)
+**Third parties:** Supabase (database)
 
 **Your control:** View/update in Profile, delete account anytime, disable notifications
 
 **Notifications:** Sent to device only, not stored in database
 
-**Questions?** Contact [your-email@example.com]
+**Questions?** Contact manishprakkash@gmail.com
 
 ---
 
